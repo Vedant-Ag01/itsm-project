@@ -37,6 +37,14 @@ public class Incident {
 
     public Incident(String id, Employee reporter, String title, String description,
                     ItService service, Impact impact, Urgency urgency, int affectedUsers) {
+        this(id, reporter, title, description, service, impact, urgency,
+                affectedUsers, LocalDateTime.now());
+    }
+
+    // Used by the public constructor and by restore()
+    private Incident(String id, Employee reporter, String title, String description,
+                     ItService service, Impact impact, Urgency urgency, int affectedUsers,
+                     LocalDateTime createdAt) {
         if (id == null || id.isBlank()) {
             throw new InvalidIncidentException("Incident id cannot be empty");
         }
@@ -66,7 +74,63 @@ public class Incident {
         this.impact = impact;
         this.urgency = urgency;
         this.affectedUsers = affectedUsers;
-        this.createdAt = LocalDateTime.now();
+        this.createdAt = createdAt;
+    }
+
+    // ---------- rebuilding a saved incident (for the database layer only) ----------
+
+    // Normal code must NOT use this. It sets saved facts directly and skips
+    // the lifecycle rules, because the incident already went through them.
+    public static Incident restore(String id, Employee reporter, String title,
+                                   String description, ItService service, Impact impact,
+                                   Urgency urgency, int affectedUsers, LocalDateTime createdAt,
+                                   IncidentStatus status, IncidentCategory category,
+                                   Priority priority, Technician assignedTechnician,
+                                   LocalDateTime acknowledgedAt, LocalDateTime resolvedAt,
+                                   LocalDateTime closedAt, String resolutionNote,
+                                   String closureNote, List<InvestigationNote> notes,
+                                   Feedback feedback) {
+        if (createdAt == null || status == null) {
+            throw new InvalidIncidentException("Saved incident is missing its date or status");
+        }
+        Incident incident = new Incident(id, reporter, title, description, service,
+                impact, urgency, affectedUsers, createdAt);
+        incident.state = stateFor(status);
+        incident.category = category;
+        incident.priority = priority;
+        incident.assignedTechnician = assignedTechnician;
+        incident.acknowledgedAt = acknowledgedAt;
+        incident.resolvedAt = resolvedAt;
+        incident.closedAt = closedAt;
+        incident.resolutionNote = resolutionNote;
+        incident.closureNote = closureNote;
+        if (notes != null) {
+            incident.investigationNotes.addAll(notes);
+        }
+        incident.feedback = feedback;
+        return incident;
+    }
+
+    // Picks the state object that matches a saved status
+    private static IncidentState stateFor(IncidentStatus status) {
+        switch (status) {
+            case CLASSIFIED:
+                return new ClassifiedState();
+            case ASSIGNED:
+                return new AssignedState();
+            case ACKNOWLEDGED:
+                return new AcknowledgedState();
+            case IN_PROGRESS:
+                return new InProgressState();
+            case RESOLVED:
+                return new ResolvedState();
+            case VERIFIED:
+                return new VerifiedState();
+            case CLOSED:
+                return new ClosedState();
+            default:
+                return new NewState();
+        }
     }
 
     // ---------- lifecycle actions (the only way status changes) ----------
