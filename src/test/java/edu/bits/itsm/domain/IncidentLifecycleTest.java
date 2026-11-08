@@ -18,8 +18,14 @@ class IncidentLifecycleTest {
         return new Technician("T1", "Ravi", "ravi@bits.edu");
     }
 
+    private ItService service() {
+        return new ItService("Payment application", BusinessCriticality.HIGH);
+    }
+
     private Incident newIncident() {
-        return new Incident("INC1", employee(), "Payment application is unavailable");
+        return new Incident("INC1", employee(), "Payment down",
+                "Payment application is unavailable",
+                service(), Impact.HIGH, Urgency.HIGH, 120);
     }
 
     // Builds an incident and moves it forward until it reaches the wanted status.
@@ -34,20 +40,53 @@ class IncidentLifecycleTest {
         if (target == IncidentStatus.ACKNOWLEDGED) return incident;
         incident.startWork();
         if (target == IncidentStatus.IN_PROGRESS) return incident;
-        incident.resolve();
+        incident.resolve("Restarted the payment service");
         if (target == IncidentStatus.RESOLVED) return incident;
         incident.verify();
         if (target == IncidentStatus.VERIFIED) return incident;
-        incident.close();
+        incident.close("Employee confirmed the fix");
         return incident;
     }
 
-    // ---------- legal moves ----------
+    // ---------- creation and validation ----------
 
     @Test
     void newIncidentStartsAsNew() {
         assertEquals(IncidentStatus.NEW, newIncident().getStatus());
     }
+
+    @Test
+    void newIncidentStoresItsDetails() {
+        Incident incident = newIncident();
+        assertEquals("Payment down", incident.getTitle());
+        assertEquals("Payment application", incident.getService().getName());
+        assertEquals(Impact.HIGH, incident.getImpact());
+        assertEquals(Urgency.HIGH, incident.getUrgency());
+        assertEquals(120, incident.getAffectedUsers());
+    }
+
+    @Test
+    void incidentWithBlankTitleIsRejected() {
+        assertThrows(InvalidIncidentException.class, () ->
+                new Incident("INC2", employee(), " ", "desc",
+                        service(), Impact.LOW, Urgency.LOW, 1));
+    }
+
+    @Test
+    void incidentWithoutServiceIsRejected() {
+        assertThrows(InvalidIncidentException.class, () ->
+                new Incident("INC2", employee(), "title", "desc",
+                        null, Impact.LOW, Urgency.LOW, 1));
+    }
+
+    @Test
+    void incidentWithZeroAffectedUsersIsRejected() {
+        assertThrows(InvalidIncidentException.class, () ->
+                new Incident("INC2", employee(), "title", "desc",
+                        service(), Impact.LOW, Urgency.LOW, 0));
+    }
+
+    // ---------- legal moves ----------
 
     @Test
     void fullLifecycleWalksFromNewToClosed() {
@@ -65,13 +104,13 @@ class IncidentLifecycleTest {
         incident.startWork();
         assertEquals(IncidentStatus.IN_PROGRESS, incident.getStatus());
 
-        incident.resolve();
+        incident.resolve("Restarted the payment service");
         assertEquals(IncidentStatus.RESOLVED, incident.getStatus());
 
         incident.verify();
         assertEquals(IncidentStatus.VERIFIED, incident.getStatus());
 
-        incident.close();
+        incident.close("Employee confirmed the fix");
         assertEquals(IncidentStatus.CLOSED, incident.getStatus());
     }
 
@@ -92,13 +131,20 @@ class IncidentLifecycleTest {
 
         incident.startWork();
         assertNull(incident.getResolvedAt());
-        incident.resolve();
+        incident.resolve("Restarted the payment service");
         assertNotNull(incident.getResolvedAt());
 
         incident.verify();
         assertNull(incident.getClosedAt());
-        incident.close();
+        incident.close("Employee confirmed the fix");
         assertNotNull(incident.getClosedAt());
+    }
+
+    @Test
+    void resolutionAndClosureNotesAreStored() {
+        Incident incident = incidentAt(IncidentStatus.CLOSED);
+        assertEquals("Restarted the payment service", incident.getResolutionNote());
+        assertEquals("Employee confirmed the fix", incident.getClosureNote());
     }
 
     // ---------- illegal jumps ----------
@@ -106,7 +152,7 @@ class IncidentLifecycleTest {
     @Test
     void newIncidentCannotBeClosed() {
         Incident incident = newIncident();
-        assertThrows(InvalidStateTransitionException.class, incident::close);
+        assertThrows(InvalidStateTransitionException.class, () -> incident.close("done"));
         assertEquals(IncidentStatus.NEW, incident.getStatus());
     }
 
@@ -126,7 +172,7 @@ class IncidentLifecycleTest {
     @Test
     void resolvedIncidentCannotBeClosedBeforeVerification() {
         Incident incident = incidentAt(IncidentStatus.RESOLVED);
-        assertThrows(InvalidStateTransitionException.class, incident::close);
+        assertThrows(InvalidStateTransitionException.class, () -> incident.close("done"));
     }
 
     @Test
@@ -136,9 +182,9 @@ class IncidentLifecycleTest {
         assertThrows(InvalidStateTransitionException.class, () -> incident.assign(technician()));
         assertThrows(InvalidStateTransitionException.class, incident::acknowledge);
         assertThrows(InvalidStateTransitionException.class, incident::startWork);
-        assertThrows(InvalidStateTransitionException.class, incident::resolve);
+        assertThrows(InvalidStateTransitionException.class, () -> incident.resolve("again"));
         assertThrows(InvalidStateTransitionException.class, incident::verify);
-        assertThrows(InvalidStateTransitionException.class, incident::close);
+        assertThrows(InvalidStateTransitionException.class, () -> incident.close("again"));
     }
 
     @Test
@@ -152,8 +198,8 @@ class IncidentLifecycleTest {
     @Test
     void exceptionMessageNamesTheStatusAndAction() {
         Incident incident = newIncident();
-        InvalidStateTransitionException ex =
-                assertThrows(InvalidStateTransitionException.class, incident::close);
+        InvalidStateTransitionException ex = assertThrows(
+                InvalidStateTransitionException.class, () -> incident.close("done"));
         assertEquals(IncidentStatus.NEW, ex.getCurrentStatus());
         assertTrue(ex.getMessage().contains("close"));
         assertTrue(ex.getMessage().contains("NEW"));
@@ -163,5 +209,55 @@ class IncidentLifecycleTest {
     void assigningToNoTechnicianIsRejected() {
         Incident incident = incidentAt(IncidentStatus.CLASSIFIED);
         assertThrows(IllegalArgumentException.class, () -> incident.assign(null));
+    }
+
+    // ---------- resolution, notes and feedback ----------
+
+    @Test
+    void resolvingNeedsResolutionDetails() {
+        Incident incident = incidentAt(IncidentStatus.IN_PROGRESS);
+        assertThrows(InvalidIncidentException.class, () -> incident.resolve(" "));
+        assertEquals(IncidentStatus.IN_PROGRESS, incident.getStatus());
+    }
+
+    @Test
+    void investigationNotesAreStoredInOrder() {
+        Incident incident = incidentAt(IncidentStatus.IN_PROGRESS);
+        incident.addInvestigationNote(new InvestigationNote(technician(), "Checked the logs"));
+        incident.addInvestigationNote(new InvestigationNote(technician(), "Database was full"));
+        assertEquals(2, incident.getInvestigationNotes().size());
+        assertEquals("Checked the logs", incident.getInvestigationNotes().get(0).getText());
+    }
+
+    @Test
+    void notesListCannotBeChangedFromOutside() {
+        Incident incident = newIncident();
+        assertThrows(UnsupportedOperationException.class, () ->
+                incident.getInvestigationNotes()
+                        .add(new InvestigationNote(technician(), "sneaky")));
+    }
+
+    @Test
+    void notesCannotBeAddedToAClosedIncident() {
+        Incident incident = incidentAt(IncidentStatus.CLOSED);
+        assertThrows(InvalidStateTransitionException.class, () ->
+                incident.addInvestigationNote(new InvestigationNote(technician(), "late note")));
+    }
+
+    @Test
+    void feedbackIsOnlyAllowedAfterResolution() {
+        Incident early = incidentAt(IncidentStatus.IN_PROGRESS);
+        assertThrows(InvalidStateTransitionException.class,
+                () -> early.giveFeedback(new Feedback(5, "great")));
+
+        Incident resolved = incidentAt(IncidentStatus.RESOLVED);
+        resolved.giveFeedback(new Feedback(5, "great"));
+        assertEquals(5, resolved.getFeedback().getRating());
+    }
+
+    @Test
+    void feedbackRatingMustBeBetweenOneAndFive() {
+        assertThrows(InvalidIncidentException.class, () -> new Feedback(0, "bad"));
+        assertThrows(InvalidIncidentException.class, () -> new Feedback(6, "wow"));
     }
 }
