@@ -1,7 +1,8 @@
+import Sidebar from './components/Sidebar'
+import { pageUrl, workspaces } from './layouts/workspaces'
 import { useEffect, useState } from 'react'
 import {
   Link,
-  NavLink,
   Navigate,
   Outlet,
   Route,
@@ -10,40 +11,7 @@ import {
 } from 'react-router'
 import './App.css'
 
-const workspaces = {
-  employee: {
-    label: 'Employee',
-    pages: [
-      { path: '', label: 'Overview' },
-      { path: 'incidents', label: 'My incidents' },
-      { path: 'report', label: 'Report incident' },
-      { path: 'notifications', label: 'Notifications' },
-    ],
-  },
-  technician: {
-    label: 'Technician',
-    pages: [
-      { path: '', label: 'Assigned incidents' },
-      { path: 'workload', label: 'Workload' },
-      { path: 'notifications', label: 'Notifications' },
-    ],
-  },
-  admin: {
-    label: 'Administrator',
-    pages: [
-      { path: '', label: 'Overview' },
-      { path: 'incidents', label: 'Incidents' },
-      { path: 'users', label: 'Users' },
-      { path: 'technicians', label: 'Technicians' },
-      { path: 'services', label: 'Services' },
-      { path: 'sla-policies', label: 'SLA policies' },
-      { path: 'assignment', label: 'Assignment strategy' },
-      { path: 'reports', label: 'Reports' },
-      { path: 'audit', label: 'Audit logs' },
-      { path: 'sla-violations', label: 'SLA violations' },
-    ],
-  },
-}
+
 
 function getInitialTheme() {
   try {
@@ -61,9 +29,7 @@ function getInitialTheme() {
     : 'light'
 }
 
-function pageUrl(role, path = '') {
-  return path ? `/${role}/${path}` : `/${role}`
-}
+
 
 function ThemeToggle({ theme, onToggle }) {
   const nextTheme = theme === 'dark' ? 'light' : 'dark'
@@ -83,47 +49,7 @@ function ThemeToggle({ theme, onToggle }) {
   )
 }
 
-function Sidebar({ role }) {
-  const workspace = workspaces[role]
 
-  return (
-    <aside className="sidebar">
-      <div>
-        <div className="brand">
-          <span className="brand-mark" aria-hidden="true" />
-          I-ITSM
-        </div>
-
-        <p className="workspace-label">
-          {workspace.label} workspace
-        </p>
-
-        <nav className="navigation" aria-label="Main navigation">
-          {workspace.pages.map((page) => (
-            <NavLink
-              key={page.path}
-              to={pageUrl(role, page.path)}
-              end={page.path === ''}
-              className={({ isActive }) =>
-                `nav-item ${isActive ? 'active' : ''}`
-              }
-            >
-              {page.label}
-            </NavLink>
-          ))}
-        </nav>
-      </div>
-
-      <div className="profile">
-        <span className="avatar" aria-hidden="true">P</span>
-        <div>
-          <strong>Layout preview</strong>
-          <span className="profile-role">{workspace.label}</span>
-        </div>
-      </div>
-    </aside>
-  )
-}
 
 function WorkspaceLayout({ role, theme, onToggle }) {
   const { pathname } = useLocation()
