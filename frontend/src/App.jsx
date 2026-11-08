@@ -1,5 +1,49 @@
 import { useEffect, useState } from 'react'
+import {
+  Link,
+  NavLink,
+  Navigate,
+  Outlet,
+  Route,
+  Routes,
+  useLocation,
+} from 'react-router'
 import './App.css'
+
+const workspaces = {
+  employee: {
+    label: 'Employee',
+    pages: [
+      { path: '', label: 'Overview' },
+      { path: 'incidents', label: 'My incidents' },
+      { path: 'report', label: 'Report incident' },
+      { path: 'notifications', label: 'Notifications' },
+    ],
+  },
+  technician: {
+    label: 'Technician',
+    pages: [
+      { path: '', label: 'Assigned incidents' },
+      { path: 'workload', label: 'Workload' },
+      { path: 'notifications', label: 'Notifications' },
+    ],
+  },
+  admin: {
+    label: 'Administrator',
+    pages: [
+      { path: '', label: 'Overview' },
+      { path: 'incidents', label: 'Incidents' },
+      { path: 'users', label: 'Users' },
+      { path: 'technicians', label: 'Technicians' },
+      { path: 'services', label: 'Services' },
+      { path: 'sla-policies', label: 'SLA policies' },
+      { path: 'assignment', label: 'Assignment strategy' },
+      { path: 'reports', label: 'Reports' },
+      { path: 'audit', label: 'Audit logs' },
+      { path: 'sla-violations', label: 'SLA violations' },
+    ],
+  },
+}
 
 function getInitialTheme() {
   try {
@@ -9,7 +53,7 @@ function getInitialTheme() {
       return saved
     }
   } catch {
-    // The app still works when browser storage is unavailable.
+    // Storage may be unavailable; use the system preference instead.
   }
 
   return window.matchMedia('(prefers-color-scheme: dark)').matches
@@ -17,12 +61,9 @@ function getInitialTheme() {
     : 'light'
 }
 
-const pages = [
-  'Overview',
-  'My incidents',
-  'Report incident',
-  'Notifications',
-]
+function pageUrl(role, path = '') {
+  return path ? `/${role}/${path}` : `/${role}`
+}
 
 function ThemeToggle({ theme, onToggle }) {
   const nextTheme = theme === 'dark' ? 'light' : 'dark'
@@ -33,7 +74,6 @@ function ThemeToggle({ theme, onToggle }) {
       type="button"
       onClick={onToggle}
       aria-label={`Switch to ${nextTheme} mode`}
-      title={`Switch to ${nextTheme} mode`}
     >
       <span aria-hidden="true">
         {theme === 'dark' ? '☀' : '☾'}
@@ -43,7 +83,9 @@ function ThemeToggle({ theme, onToggle }) {
   )
 }
 
-function Sidebar({ activePage, onNavigate }) {
+function Sidebar({ role }) {
+  const workspace = workspaces[role]
+
   return (
     <aside className="sidebar">
       <div>
@@ -52,35 +94,76 @@ function Sidebar({ activePage, onNavigate }) {
           I-ITSM
         </div>
 
-        <p className="workspace-label">Employee workspace</p>
+        <p className="workspace-label">
+          {workspace.label} workspace
+        </p>
 
         <nav className="navigation" aria-label="Main navigation">
-          {pages.map((page) => (
-            <button
-              key={page}
-              type="button"
-              className={`nav-item ${activePage === page ? 'active' : ''}`}
-              aria-current={activePage === page ? 'page' : undefined}
-              onClick={() => onNavigate(page)}
+          {workspace.pages.map((page) => (
+            <NavLink
+              key={page.path}
+              to={pageUrl(role, page.path)}
+              end={page.path === ''}
+              className={({ isActive }) =>
+                `nav-item ${isActive ? 'active' : ''}`
+              }
             >
-              {page}
-            </button>
+              {page.label}
+            </NavLink>
           ))}
         </nav>
       </div>
 
       <div className="profile">
-        <span className="avatar" aria-hidden="true">N</span>
+        <span className="avatar" aria-hidden="true">P</span>
         <div>
-          <strong>Naman</strong>
-          <span className="profile-role">Employee · Preview</span>
+          <strong>Layout preview</strong>
+          <span className="profile-role">{workspace.label}</span>
         </div>
       </div>
     </aside>
   )
 }
 
-function Overview({ onReport }) {
+function WorkspaceLayout({ role, theme, onToggle }) {
+  const { pathname } = useLocation()
+  const workspace = workspaces[role]
+  const normalizedPath = pathname.replace(/\/+$/, '')
+
+  const currentPage = workspace.pages.find(
+    (page) => pageUrl(role, page.path) === normalizedPath,
+  )
+
+  const title = currentPage?.label ?? 'Page not found'
+
+  useEffect(() => {
+    document.title = `${title} · I-ITSM`
+  }, [title])
+
+  return (
+    <div className="app-shell">
+      <Sidebar role={role} />
+
+      <div className="workspace">
+        <header className="topbar">
+          <div className="breadcrumb">
+            <span>{workspace.label}</span>
+            <span aria-hidden="true">/</span>
+            <strong>{title}</strong>
+          </div>
+
+          <ThemeToggle theme={theme} onToggle={onToggle} />
+        </header>
+
+        <main className="main-content">
+          <Outlet />
+        </main>
+      </div>
+    </div>
+  )
+}
+
+function EmployeeOverview() {
   const metrics = [
     'Open incidents',
     'In progress',
@@ -94,18 +177,12 @@ function Overview({ onReport }) {
         <div>
           <p className="eyebrow">Overview</p>
           <h1>Your workspace</h1>
-          <p className="subtitle">
-            Report issues. Track progress.
-          </p>
+          <p className="subtitle">Report issues. Track progress.</p>
         </div>
 
-        <button
-          className="primary-button"
-          type="button"
-          onClick={onReport}
-        >
+        <Link className="primary-button" to="/employee/report">
           + Report incident
-        </button>
+        </Link>
       </div>
 
       <div className="stats-grid">
@@ -161,12 +238,14 @@ function Overview({ onReport }) {
   )
 }
 
-function PlaceholderPage({ title }) {
+function PlaceholderPage({ title, role }) {
   return (
     <>
       <div className="page-heading">
         <div>
-          <p className="eyebrow">Employee workspace</p>
+          <p className="eyebrow">
+            {workspaces[role].label} workspace
+          </p>
           <h1>{title}</h1>
         </div>
       </div>
@@ -174,17 +253,28 @@ function PlaceholderPage({ title }) {
       <section className="panel empty-state">
         <h2>This page is next</h2>
         <p>
-          The navigation works. We’ll build this screen after the shared
-          layout is ready.
+          This route is ready. Its page content and API connection
+          will be added separately.
         </p>
       </section>
     </>
   )
 }
 
+function NotFound({ home = '/employee' }) {
+  return (
+    <section className="panel empty-state">
+      <h1>Page not found</h1>
+      <p>Check the address or return to your workspace.</p>
+      <Link className="text-link" to={home}>
+        Return to workspace
+      </Link>
+    </section>
+  )
+}
+
 export default function App() {
   const [theme, setTheme] = useState(getInitialTheme)
-  const [activePage, setActivePage] = useState('Overview')
 
   useEffect(() => {
     document.documentElement.dataset.theme = theme
@@ -196,39 +286,60 @@ export default function App() {
     }
   }, [theme])
 
+  function toggleTheme() {
+    setTheme((current) => current === 'dark' ? 'light' : 'dark')
+  }
+
   return (
-    <div className="app-shell">
-      <Sidebar
-        activePage={activePage}
-        onNavigate={setActivePage}
-      />
+    <Routes>
+      <Route path="/" element={<Navigate to="/employee" replace />} />
 
-      <div className="workspace">
-        <header className="topbar">
-          <div className="breadcrumb">
-            <span>Workspace</span>
-            <span aria-hidden="true">/</span>
-            <strong>{activePage}</strong>
-          </div>
-
-          <ThemeToggle
-            theme={theme}
-            onToggle={() =>
-              setTheme((current) => current === 'dark' ? 'light' : 'dark')
+      {Object.entries(workspaces).map(([role, workspace]) => (
+        <Route
+          key={role}
+          path={`/${role}`}
+          element={
+            <WorkspaceLayout
+              role={role}
+              theme={theme}
+              onToggle={toggleTheme}
+            />
+          }
+        >
+          <Route
+            index
+            element={
+              role === 'employee' ? (
+                <EmployeeOverview />
+              ) : (
+                <PlaceholderPage
+                  title={workspace.pages[0].label}
+                  role={role}
+                />
+              )
             }
           />
-        </header>
 
-        <main className="main-content">
-          {activePage === 'Overview' ? (
-            <Overview
-              onReport={() => setActivePage('Report incident')}
-            />
-          ) : (
-            <PlaceholderPage title={activePage} />
-          )}
-        </main>
-      </div>
-    </div>
+          {workspace.pages
+            .filter((page) => page.path !== '')
+            .map((page) => (
+              <Route
+                key={page.path}
+                path={page.path}
+                element={
+                  <PlaceholderPage title={page.label} role={role} />
+                }
+              />
+            ))}
+
+          <Route
+            path="*"
+            element={<NotFound home={pageUrl(role)} />}
+          />
+        </Route>
+      ))}
+
+      <Route path="*" element={<NotFound />} />
+    </Routes>
   )
 }

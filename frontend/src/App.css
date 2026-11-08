@@ -356,3 +356,32 @@ h1 {
     grid-template-columns: 1fr;
   }
 }
+/* Navigation now uses links instead of buttons. */
+.nav-item {
+  display: block;
+  text-decoration: none;
+}
+
+.primary-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  text-decoration: none;
+}
+
+.text-link {
+  display: inline-block;
+  margin-top: 16px;
+  color: var(--accent-text);
+  text-underline-offset: 4px;
+}
+
+/* The administrator has a longer menu. */
+.sidebar {
+  overflow-y: auto;
+}
+
+.profile {
+  margin-top: 24px;
+  flex-shrink: 0;
+}
