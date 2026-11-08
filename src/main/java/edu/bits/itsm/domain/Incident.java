@@ -8,10 +8,19 @@ public class Incident {
     private final Employee reporter;
     private final String description;
     private final LocalDateTime createdAt;
+
     private IncidentCategory category;
     private Priority priority;
-    private IncidentStatus status;
     private Technician assignedTechnician;
+
+    // The current state object Status is read from it, and it changes only
+    // through the methods below.
+    private IncidentState state = new NewState();
+
+    // Timestamps the SLA code will need later.
+    private LocalDateTime acknowledgedAt;
+    private LocalDateTime resolvedAt;
+    private LocalDateTime closedAt;
 
     public Incident(String id, Employee reporter, String description) {
         if (id == null || id.isBlank()) {
@@ -27,8 +36,46 @@ public class Incident {
         this.reporter = reporter;
         this.description = description;
         this.createdAt = LocalDateTime.now();
-        this.status = IncidentStatus.NEW;
     }
+
+    // ---------- the only way status changes ----------
+
+    public void classify() {
+        state = state.classify();
+    }
+
+    public void assign(Technician technician) {
+        if (technician == null) {
+            throw new IllegalArgumentException("Cannot assign to a missing technician");
+        }
+        state = state.assign();              // throws first if illegal
+        this.assignedTechnician = technician;
+    }
+
+    public void acknowledge() {
+        state = state.acknowledge();
+        this.acknowledgedAt = LocalDateTime.now();
+    }
+
+    public void startWork() {
+        state = state.startWork();
+    }
+
+    public void resolve() {
+        state = state.resolve();
+        this.resolvedAt = LocalDateTime.now();
+    }
+
+    public void verify() {
+        state = state.verify();
+    }
+
+    public void close() {
+        state = state.close();
+        this.closedAt = LocalDateTime.now();
+    }
+
+    // ---------- getters and the two simple setters ----------
 
     public String getId() {
         return id;
@@ -63,14 +110,22 @@ public class Incident {
     }
 
     public IncidentStatus getStatus() {
-        return status;
+        return state.getStatus();
     }
 
     public Technician getAssignedTechnician() {
         return assignedTechnician;
     }
 
-    public void setAssignedTechnician(Technician assignedTechnician) {
-        this.assignedTechnician = assignedTechnician;
+    public LocalDateTime getAcknowledgedAt() {
+        return acknowledgedAt;
+    }
+
+    public LocalDateTime getResolvedAt() {
+        return resolvedAt;
+    }
+
+    public LocalDateTime getClosedAt() {
+        return closedAt;
     }
 }
