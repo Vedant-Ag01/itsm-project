@@ -1,14 +1,13 @@
 package edu.bits.itsm.domain;
 
-import java.time.Instant;
+import java.time.LocalDateTime;
 
 public class Incident {
 
     private final String id;
     private final Employee reporter;
     private final String description;
-    private final Instant createdAt;
-
+    private final LocalDateTime createdAt;
     private IncidentCategory category;
     private Priority priority;
     private IncidentStatus status;
@@ -27,7 +26,7 @@ public class Incident {
         this.id = id;
         this.reporter = reporter;
         this.description = description;
-        this.createdAt = Instant.now();
+        this.createdAt = LocalDateTime.now();
         this.status = IncidentStatus.NEW;
     }
 
@@ -43,7 +42,7 @@ public class Incident {
         return description;
     }
 
-    public Instant getCreatedAt() {
+    public LocalDateTime getCreatedAt() {
         return createdAt;
     }
 
