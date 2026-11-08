@@ -1,4 +1,5 @@
 import { Link } from 'react-router'
+
 export default function EmployeeOverview() {
   const metrics = [
     'Open incidents',
