@@ -1,29 +1,23 @@
 import { apiRequest } from './client'
-import { mockIncidents } from '../mocks/incidents'
+import {
+  addMockNote,
+  getMockAudit,
+  getMockIncident,
+  listMockIncidents,
+  submitMockFeedback,
+  verifyMockIncident,
+} from '../mocks/incidentStore'
 
 export const USING_MOCKS =
   import.meta.env.VITE_USE_MOCKS !== 'false'
 
-const supportedFilters = [
-  'id',
-  'status',
-  'priority',
-  'category',
-  'slaStatus',
-]
+function incidentPath(id) {
+  return `/incidents/${encodeURIComponent(id)}`
+}
 
 export async function getIncidents(filters = {}, { signal } = {}) {
   if (USING_MOCKS) {
-    const items = mockIncidents.filter((incident) =>
-      supportedFilters.every(
-        (key) => !filters[key] || incident[key] === filters[key],
-      ),
-    )
-
-    return {
-      total: items.length,
-      items: items.map((incident) => ({ ...incident })),
-    }
+    return listMockIncidents(filters)
   }
 
   const params = new URLSearchParams()
@@ -40,4 +34,52 @@ export async function getIncidents(filters = {}, { signal } = {}) {
     `/incidents${query ? `?${query}` : ''}`,
     { signal },
   )
+}
+
+export async function getIncident(id, { signal } = {}) {
+  if (USING_MOCKS) {
+    return getMockIncident(id)
+  }
+
+  return apiRequest(incidentPath(id), { signal })
+}
+
+export async function getIncidentAudit(id, { signal } = {}) {
+  if (USING_MOCKS) {
+    return getMockAudit(id)
+  }
+
+  return apiRequest(`${incidentPath(id)}/audit`, { signal })
+}
+
+export async function addIncidentNote(id, text) {
+  if (USING_MOCKS) {
+    return addMockNote(id, text)
+  }
+
+  return apiRequest(`${incidentPath(id)}/notes`, {
+    method: 'POST',
+    body: { text },
+  })
+}
+
+export async function verifyIncident(id) {
+  if (USING_MOCKS) {
+    return verifyMockIncident(id)
+  }
+
+  return apiRequest(`${incidentPath(id)}/verify`, {
+    method: 'POST',
+  })
+}
+
+export async function submitIncidentFeedback(id, rating, comment) {
+  if (USING_MOCKS) {
+    return submitMockFeedback(id, rating, comment)
+  }
+
+  return apiRequest(`${incidentPath(id)}/feedback`, {
+    method: 'POST',
+    body: { rating, comment },
+  })
 }

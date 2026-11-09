@@ -33,7 +33,12 @@ const columns = [
     render: (incident) => (
       <div className="incident-cell">
         <span className="incident-id">{incident.id}</span>
-        <span>{incident.title}</span>
+        <Link
+          className="incident-link"
+          to={`/employee/incidents/${incident.id}`}
+        >
+  {incident.title}
+</Link>
       </div>
     ),
   },
