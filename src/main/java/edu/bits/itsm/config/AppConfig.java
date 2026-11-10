@@ -1,11 +1,13 @@
 package edu.bits.itsm.config;
 
+import edu.bits.itsm.domain.Incident;
 import edu.bits.itsm.domain.Technician;
 import edu.bits.itsm.duplicate.DuplicateDetector;
 import edu.bits.itsm.duplicate.DuplicateMatch;
-import edu.bits.itsm.domain.Incident;
 import edu.bits.itsm.event.IncidentObserver;
-import edu.bits.itsm.repository.InMemoryIncidentRepository;
+import edu.bits.itsm.persistence.IncidentTable;
+import edu.bits.itsm.persistence.IncidentMapper;
+import edu.bits.itsm.persistence.JpaIncidentRepository;
 import edu.bits.itsm.repository.IncidentRepository;
 import edu.bits.itsm.service.IncidentFactory;
 import edu.bits.itsm.service.IncidentService;
@@ -21,16 +23,22 @@ import java.util.List;
 public class AppConfig {
 
     @Bean
-    public IncidentRepository incidentRepository() {
-        return new InMemoryIncidentRepository();
-    }
-
-    @Bean
     public List<Technician> technicians() {
         List<Technician> list = new ArrayList<>();
         list.add(new Technician("T1", "Ravi", "ravi@bits.edu"));
         list.add(new Technician("T2", "Meera", "meera@bits.edu"));
         return list;
+    }
+
+    @Bean
+    public IncidentMapper incidentMapper(List<Technician> technicians) {
+        return new IncidentMapper(technicians);
+    }
+
+    @Bean
+    public IncidentRepository incidentRepository(IncidentTable jpa,
+                                                 IncidentMapper mapper) {
+        return new JpaIncidentRepository(jpa, mapper);
     }
 
     @Bean

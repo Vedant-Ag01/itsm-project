@@ -1,13 +1,18 @@
 package edu.bits.itsm.api;
 
-import edu.bits.itsm.api.dto.ActionRequest;
-import edu.bits.itsm.api.dto.NoteActionRequest;
 import edu.bits.itsm.api.dto.CreateIncidentRequest;
 import edu.bits.itsm.api.dto.CreateIncidentResponse;
 import edu.bits.itsm.api.dto.IncidentResponse;
+import edu.bits.itsm.api.dto.NoteActionRequest;
+import edu.bits.itsm.auth.AllowedRoles;
+import edu.bits.itsm.auth.CurrentUser;
+import edu.bits.itsm.auth.ForbiddenException;
+import edu.bits.itsm.auth.Role;
+import edu.bits.itsm.auth.UserAccount;
 import edu.bits.itsm.domain.Employee;
 import edu.bits.itsm.domain.Incident;
 import edu.bits.itsm.domain.ItService;
+import edu.bits.itsm.domain.Technician;
 import edu.bits.itsm.duplicate.DuplicateMatch;
 import edu.bits.itsm.service.CreationResult;
 import edu.bits.itsm.service.IncidentService;
@@ -34,12 +39,14 @@ public class IncidentController {
         this.incidentService = incidentService;
     }
 
+    // ---------- reading ----------
+
     @PostMapping
     @ResponseStatus(HttpStatus.CREATED)
+    @AllowedRoles({Role.EMPLOYEE, Role.ADMIN})
     public CreateIncidentResponse create(@RequestBody CreateIncidentRequest request) {
-        // Temporary reporter until login exists (V8)
-        Employee reporter = new Employee("TEMP", request.reporterName(),
-                "temp@bits.edu", "Unknown");
+        UserAccount user = CurrentUser.get();
+        Employee reporter = new Employee(user.id, user.name, user.email, user.department);
         ItService service = new ItService(request.serviceName(), request.criticality());
 
         CreationResult result = incidentService.createIncident(
@@ -63,65 +70,104 @@ public class IncidentController {
 
     @GetMapping
     public List<IncidentResponse> list() {
+        UserAccount user = CurrentUser.get();
         List<IncidentResponse> responses = new ArrayList<>();
         for (Incident incident : incidentService.getAllIncidents()) {
-            responses.add(IncidentResponse.from(incident));
+            if (canSee(user, incident)) {
+                responses.add(IncidentResponse.from(incident));
+            }
         }
         return responses;
     }
 
     @GetMapping("/{id}")
     public IncidentResponse getOne(@PathVariable String id) {
-        return IncidentResponse.from(incidentService.getIncident(id));
+        Incident incident = incidentService.getIncident(id);
+        if (!canSee(CurrentUser.get(), incident)) {
+            throw new ForbiddenException("You are not allowed to see this incident");
+        }
+        return IncidentResponse.from(incident);
     }
 
+    // ---------- lifecycle actions ----------
+
     @PostMapping("/{id}/auto-assign")
-    public IncidentResponse autoAssign(@PathVariable String id,
-                                       @RequestBody(required = false) ActionRequest request) {
-        incidentService.autoAssign(id, actorOf(request));
+    @AllowedRoles({Role.ADMIN})
+    public IncidentResponse autoAssign(@PathVariable String id) {
+        UserAccount user = CurrentUser.get();
+        incidentService.autoAssign(id, user.name);
         return IncidentResponse.from(incidentService.getIncident(id));
     }
 
     @PostMapping("/{id}/acknowledge")
-    public IncidentResponse acknowledge(@PathVariable String id,
-                                        @RequestBody(required = false) ActionRequest request) {
-        incidentService.acknowledge(id, actorOf(request));
+    @AllowedRoles({Role.TECHNICIAN, Role.ADMIN})
+    public IncidentResponse acknowledge(@PathVariable String id) {
+        UserAccount user = CurrentUser.get();
+        requireAssignedTechnicianOrAdmin(user, incidentService.getIncident(id));
+        incidentService.acknowledge(id, user.name);
         return IncidentResponse.from(incidentService.getIncident(id));
     }
 
     @PostMapping("/{id}/start-work")
-    public IncidentResponse startWork(@PathVariable String id,
-                                      @RequestBody(required = false) ActionRequest request) {
-        incidentService.startWork(id, actorOf(request));
+    @AllowedRoles({Role.TECHNICIAN, Role.ADMIN})
+    public IncidentResponse startWork(@PathVariable String id) {
+        UserAccount user = CurrentUser.get();
+        requireAssignedTechnicianOrAdmin(user, incidentService.getIncident(id));
+        incidentService.startWork(id, user.name);
         return IncidentResponse.from(incidentService.getIncident(id));
     }
 
     @PostMapping("/{id}/resolve")
+    @AllowedRoles({Role.TECHNICIAN, Role.ADMIN})
     public IncidentResponse resolve(@PathVariable String id,
                                     @RequestBody NoteActionRequest request) {
-        incidentService.resolve(id, request.actor(), request.note());
+        UserAccount user = CurrentUser.get();
+        requireAssignedTechnicianOrAdmin(user, incidentService.getIncident(id));
+        incidentService.resolve(id, user.name, request.note());
         return IncidentResponse.from(incidentService.getIncident(id));
     }
 
     @PostMapping("/{id}/verify")
-    public IncidentResponse verify(@PathVariable String id,
-                                   @RequestBody(required = false) ActionRequest request) {
-        incidentService.verify(id, actorOf(request));
+    @AllowedRoles({Role.EMPLOYEE, Role.ADMIN})
+    public IncidentResponse verify(@PathVariable String id) {
+        UserAccount user = CurrentUser.get();
+        Incident incident = incidentService.getIncident(id);
+        if (user.role != Role.ADMIN && !incident.getReporter().getId().equals(user.id)) {
+            throw new ForbiddenException("Only the person who reported this incident can verify it");
+        }
+        incidentService.verify(id, user.name);
         return IncidentResponse.from(incidentService.getIncident(id));
     }
 
     @PostMapping("/{id}/close")
+    @AllowedRoles({Role.ADMIN})
     public IncidentResponse close(@PathVariable String id,
                                   @RequestBody NoteActionRequest request) {
-        incidentService.close(id, request.actor(), request.note());
+        UserAccount user = CurrentUser.get();
+        incidentService.close(id, user.name, request.note());
         return IncidentResponse.from(incidentService.getIncident(id));
     }
 
-    // If nobody says who is acting, call it "Unknown"
-    private String actorOf(ActionRequest request) {
-        if (request == null || request.actor() == null) {
-            return "Unknown";
+    // ---------- who may see what ----------
+
+    private boolean canSee(UserAccount user, Incident incident) {
+        if (user.role == Role.ADMIN) {
+            return true;
         }
-        return request.actor();
+        if (user.role == Role.EMPLOYEE) {
+            return incident.getReporter().getId().equals(user.id);
+        }
+        Technician assigned = incident.getAssignedTechnician();
+        return assigned != null && assigned.getId().equals(user.id);
+    }
+
+    private void requireAssignedTechnicianOrAdmin(UserAccount user, Incident incident) {
+        if (user.role == Role.ADMIN) {
+            return;
+        }
+        Technician assigned = incident.getAssignedTechnician();
+        if (assigned == null || !assigned.getId().equals(user.id)) {
+            throw new ForbiddenException("This incident is not assigned to you");
+        }
     }
 }

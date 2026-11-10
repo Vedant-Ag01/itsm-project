@@ -1,6 +1,8 @@
 package edu.bits.itsm.api;
 
 import edu.bits.itsm.api.dto.ErrorResponse;
+import edu.bits.itsm.auth.AuthenticationFailedException;
+import edu.bits.itsm.auth.ForbiddenException;
 import edu.bits.itsm.domain.IncidentNotFoundException;
 import edu.bits.itsm.domain.InvalidIncidentException;
 import edu.bits.itsm.domain.InvalidStateTransitionException;
@@ -14,6 +16,18 @@ import java.time.LocalDateTime;
 
 @RestControllerAdvice
 public class ApiExceptionHandler {
+
+    // Not logged in, or wrong email/password -> 401
+    @ExceptionHandler(AuthenticationFailedException.class)
+    public ResponseEntity<ErrorResponse> notLoggedIn(AuthenticationFailedException e) {
+        return reply(HttpStatus.UNAUTHORIZED, e.getMessage());
+    }
+
+    // Logged in, but the role is not allowed -> 403
+    @ExceptionHandler(ForbiddenException.class)
+    public ResponseEntity<ErrorResponse> forbidden(ForbiddenException e) {
+        return reply(HttpStatus.FORBIDDEN, e.getMessage());
+    }
 
     // Unknown incident id -> 404
     @ExceptionHandler(IncidentNotFoundException.class)
