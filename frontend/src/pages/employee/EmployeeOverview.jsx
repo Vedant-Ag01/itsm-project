@@ -61,7 +61,7 @@ const columns = [
     key: 'slaStatus',
     label: 'SLA',
     render: (incident) => (
-      <SlaBadge value={incident.slaStatus} />
+      <span title="SLA status">{incident.slaStatus ? <SlaBadge value={incident.slaStatus} /> : "Not available"}</span>
     ),
   },
 ]

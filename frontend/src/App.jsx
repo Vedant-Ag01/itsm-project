@@ -9,6 +9,10 @@ import PlaceholderPage from './pages/PlaceholderPage'
 import NotFound from './pages/NotFound'
 import './App.css'
 import ReportIncident from './pages/employee/ReportIncident'
+import SessionGate from './auth/SessionGate'
+import Login from './pages/Login'
+import LiveReportIncident from './pages/employee/LiveReportIncident'
+import { USING_MOCKS } from './api/incidents'
 
 function getInitialTheme() {
   try {
@@ -42,18 +46,19 @@ export default function App() {
 
   return (
     <Routes>
-      <Route path="/" element={<Navigate to="/employee" replace />} />
+      <Route path="/" element={<Navigate to="/login" replace />} />
+      <Route path="/login" element={<SessionGate><Login theme={theme} onToggle={toggleTheme} /></SessionGate>} />
 
       {Object.entries(workspaces).map(([role, workspace]) => (
         <Route
           key={role}
           path={`/${role}`}
           element={
-            <WorkspaceLayout
+            <SessionGate role={role}><WorkspaceLayout
               role={role}
               theme={theme}
               onToggle={toggleTheme}
-            />
+            /></SessionGate>
           }
         >
           <Route
@@ -80,7 +85,7 @@ export default function App() {
   role === 'employee' && page.path === 'incidents' ? (
     <MyIncidents />
   ) : role === 'employee' && page.path === 'report' ? (
-    <ReportIncident />
+    USING_MOCKS ? <ReportIncident /> : <LiveReportIncident />
   ) : (
     <PlaceholderPage title={page.label} role={role} />
   )

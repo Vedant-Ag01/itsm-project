@@ -84,7 +84,7 @@ function IncidentDetailsContent({ id }) {
         }
       })
 
-    getIncidentAudit(id, { signal: controller.signal })
+    if (USING_MOCKS) getIncidentAudit(id, { signal: controller.signal })
       .then((items) => {
         if (active) {
           setAudit({ phase: 'ready', items, error: '' })
@@ -139,7 +139,7 @@ function IncidentDetailsContent({ id }) {
       afterSuccess?.()
 
       // Failure here must not make a successful update look unsuccessful.
-      await refreshAudit()
+      if (USING_MOCKS) await refreshAudit()
     } catch (error) {
       if (mounted.current) {
         setNotice({ type: 'error', message: error.message })
@@ -187,7 +187,7 @@ function IncidentDetailsContent({ id }) {
 
   const incident = state.incident
   const canVerify = incident.status === 'RESOLVED'
-  const canGiveFeedback = ['RESOLVED', 'VERIFIED', 'CLOSED'].includes(
+  const canGiveFeedback = USING_MOCKS && ['RESOLVED', 'VERIFIED', 'CLOSED'].includes(
     incident.status,
   )
   const canAddNote = incident.status !== 'CLOSED'
@@ -210,7 +210,7 @@ function IncidentDetailsContent({ id }) {
         <div className="detail-badges">
           <PriorityBadge value={incident.priority} />
           <StatusBadge value={incident.status} />
-          <SlaBadge value={incident.slaStatus} />
+          <span title="SLA status">{incident.slaStatus ? <SlaBadge value={incident.slaStatus} /> : "Not available"}</span>
         </div>
       </div>
 
@@ -270,7 +270,7 @@ function IncidentDetailsContent({ id }) {
             </dl>
           </Card>
 
-          <Card title="Notes and additional information">
+          {USING_MOCKS ? <Card title="Notes and additional information">
             {incident.notes.length === 0 ? (
               <p className="subtitle">No notes have been added yet.</p>
             ) : (
@@ -325,11 +325,11 @@ function IncidentDetailsContent({ id }) {
                 This incident is closed. Additional notes are disabled.
               </p>
             )}
-          </Card>
+          </Card> : <Card title="Notes"><p className="subtitle">Notes and feedback are not available yet.</p></Card>}
 
-          {incident.resolutionNote && (
+          { (incident.resolutionNote || canVerify) && (
             <Card title="Resolution">
-              <p className="detail-description">{incident.resolutionNote}</p>
+              <p className="detail-description">{incident.resolutionNote ?? "Support marked this incident resolved. Check that your issue is fixed before verifying."}</p>
               <p className="subtitle">
                 Resolved {formatDate(incident.resolvedAt)}
               </p>
@@ -425,7 +425,7 @@ function IncidentDetailsContent({ id }) {
           )}
         </div>
 
-        <Card title="Incident history">
+        {USING_MOCKS ? <Card title="Incident history">
           {audit.phase === 'loading' && (
             <p className="subtitle" role="status">Loading history…</p>
           )}
@@ -460,7 +460,7 @@ function IncidentDetailsContent({ id }) {
               </ol>
             )
           )}
-        </Card>
+        </Card> : <Card title="Incident history"><p className="subtitle">History is not available yet.</p></Card>}
       </div>
     </>
   )

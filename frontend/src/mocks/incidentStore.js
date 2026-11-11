@@ -80,7 +80,7 @@ for (const item of mockIncidents) {
     priority: item.priority,
     priorityLabel: priorityLabels[item.priority],
     status: item.status,
-    reporter: { id: 'E1', name: 'Naman' },
+    reporter: { id: 'E1', name: 'Asha' },
     assignedTechnician: item.assignedTechnician
       ? {
           id: item.assignedTechnician === 'Ravi' ? 'T1' : 'T2',
@@ -130,7 +130,7 @@ for (const item of mockIncidents) {
       timestamp,
       user:
         index === 0 || stage === 'VERIFIED'
-          ? 'Naman (E1)'
+          ? 'Asha (E1)'
           : 'System',
       action: stageActions[stage],
       incidentId: item.id,
@@ -161,7 +161,7 @@ function copy(value) {
 function recordEvent(incident, action, description, previousStatus) {
   histories.get(incident.id).push({
     timestamp: localTimestamp(new Date()),
-    user: 'Naman (E1)',
+    user: 'Asha (E1)',
     action,
     incidentId: incident.id,
     previousStatus,
@@ -221,7 +221,7 @@ export function addMockNote(id, text) {
   }
 
   incident.notes.push({
-    author: 'Naman',
+    author: 'Asha',
     text: cleaned,
     createdAt: localTimestamp(new Date()),
   })
@@ -373,7 +373,7 @@ export function createMockIncident(input) {
     priority,
     priorityLabel: labels[priority],
     status: 'CLASSIFIED',
-    reporter: { id: 'E1', name: 'Naman' },
+    reporter: { id: 'E1', name: 'Asha' },
     assignedTechnician: null,
     createdAt,
     acknowledgedAt: null,
@@ -393,12 +393,12 @@ export function createMockIncident(input) {
   histories.set(id, [
     {
       timestamp: createdAt,
-      user: 'Naman (E1)',
+      user: 'Asha (E1)',
       action: 'CREATED',
       incidentId: id,
       previousStatus: null,
       newStatus: 'NEW',
-      description: 'Incident reported by Naman',
+      description: 'Incident reported by Asha',
     },
     {
       timestamp: createdAt,

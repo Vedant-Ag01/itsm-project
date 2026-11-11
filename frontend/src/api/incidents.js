@@ -2,7 +2,7 @@ import {
   createMockIncident,
   listMockServices,
 } from '../mocks/incidentStore'
-import { apiRequest } from './client'
+import { ApiError, apiRequest } from './client'
 import {
   addMockNote,
   getMockAudit,
@@ -34,10 +34,9 @@ export async function getIncidents(filters = {}, { signal } = {}) {
 
   const query = params.toString()
 
-  return apiRequest(
-    `/incidents${query ? `?${query}` : ''}`,
-    { signal },
-  )
+  const rows = await apiRequest(`/incidents${query ? `?${query}` : ''}`, { signal })
+  if (!Array.isArray(rows)) throw new Error('Unexpected incident list response.')
+  return { total: rows.length, items: rows.map((row) => ({ ...row, service: row.serviceName, slaStatus: null })) }
 }
 
 export async function getIncident(id, { signal } = {}) {
@@ -45,7 +44,7 @@ export async function getIncident(id, { signal } = {}) {
     return getMockIncident(id)
   }
 
-  return apiRequest(incidentPath(id), { signal })
+  return normalizeIncident(await apiRequest(incidentPath(id), { signal }))
 }
 
 export async function getIncidentAudit(id, { signal } = {}) {
@@ -53,7 +52,8 @@ export async function getIncidentAudit(id, { signal } = {}) {
     return getMockAudit(id)
   }
 
-  return apiRequest(`${incidentPath(id)}/audit`, { signal })
+  void signal
+  throw new ApiError('Incident history is not available yet.', 501)
 }
 
 export async function addIncidentNote(id, text) {
@@ -61,10 +61,7 @@ export async function addIncidentNote(id, text) {
     return addMockNote(id, text)
   }
 
-  return apiRequest(`${incidentPath(id)}/notes`, {
-    method: 'POST',
-    body: { text },
-  })
+  throw new ApiError('Adding notes is not available yet.', 501)
 }
 
 export async function verifyIncident(id) {
@@ -72,9 +69,7 @@ export async function verifyIncident(id) {
     return verifyMockIncident(id)
   }
 
-  return apiRequest(`${incidentPath(id)}/verify`, {
-    method: 'POST',
-  })
+  return normalizeIncident(await apiRequest(`${incidentPath(id)}/verify`, { method: 'POST' }))
 }
 
 export async function submitIncidentFeedback(id, rating, comment) {
@@ -82,10 +77,7 @@ export async function submitIncidentFeedback(id, rating, comment) {
     return submitMockFeedback(id, rating, comment)
   }
 
-  return apiRequest(`${incidentPath(id)}/feedback`, {
-    method: 'POST',
-    body: { rating, comment },
-  })
+  throw new ApiError('Feedback is not available yet.', 501)
 }
 export async function getReportServices() {
   if (USING_MOCKS) {
@@ -106,4 +98,15 @@ export async function createIncident(input) {
     method: 'POST',
     body: input,
   })
+}
+
+function normalizeIncident(row) {
+  return {
+    ...row,
+    service: { name: row.serviceName },
+    reporter: { name: row.reporterName },
+    assignedTechnician: row.assignedTechnician ? { name: row.assignedTechnician } : null,
+    impact: 'Not available', urgency: 'Not available', slaStatus: null,
+    notes: [], feedback: null,
+  }
 }
