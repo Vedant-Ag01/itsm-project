@@ -11,6 +11,10 @@ public class InvestigationNote {
     private final LocalDateTime createdAt;
 
     public InvestigationNote(User author, String text) {
+        this(author, text, LocalDateTime.now());
+    }
+
+    private InvestigationNote(User author, String text, LocalDateTime createdAt) {
         if (author == null) {
             throw new InvalidIncidentException("A note must have an author");
         }
@@ -19,7 +23,15 @@ public class InvestigationNote {
         }
         this.author = author;
         this.text = text;
-        this.createdAt = LocalDateTime.now();
+        this.createdAt = createdAt;
+    }
+
+    // For the database layer only: rebuilds a saved note with its original time
+    public static InvestigationNote restore(User author, String text, LocalDateTime createdAt) {
+        if (createdAt == null) {
+            throw new InvalidIncidentException("A saved note must have its original time");
+        }
+        return new InvestigationNote(author, text, createdAt);
     }
 
     public User getAuthor() {
