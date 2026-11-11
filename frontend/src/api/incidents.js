@@ -1,3 +1,7 @@
+import {
+  createMockIncident,
+  listMockServices,
+} from '../mocks/incidentStore'
 import { apiRequest } from './client'
 import {
   addMockNote,
@@ -81,5 +85,25 @@ export async function submitIncidentFeedback(id, rating, comment) {
   return apiRequest(`${incidentPath(id)}/feedback`, {
     method: 'POST',
     body: { rating, comment },
+  })
+}
+export async function getReportServices() {
+  if (USING_MOCKS) {
+    return listMockServices()
+  }
+
+  throw new Error(
+    'The employee service-list endpoint has not been configured yet.',
+  )
+}
+
+export async function createIncident(input) {
+  if (USING_MOCKS) {
+    return createMockIncident(input)
+  }
+
+  return apiRequest('/incidents', {
+    method: 'POST',
+    body: input,
   })
 }

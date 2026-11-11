@@ -8,6 +8,7 @@ import IncidentDetails from './pages/employee/IncidentDetails'
 import PlaceholderPage from './pages/PlaceholderPage'
 import NotFound from './pages/NotFound'
 import './App.css'
+import ReportIncident from './pages/employee/ReportIncident'
 
 function getInitialTheme() {
   try {
@@ -76,10 +77,14 @@ export default function App() {
                 key={page.path}
                 path={page.path}
                 element={
-                  role === 'employee' && page.path === 'incidents'
-                    ? <MyIncidents />
-                    : <PlaceholderPage title={page.label} role={role} />
-                }
+  role === 'employee' && page.path === 'incidents' ? (
+    <MyIncidents />
+  ) : role === 'employee' && page.path === 'report' ? (
+    <ReportIncident />
+  ) : (
+    <PlaceholderPage title={page.label} role={role} />
+  )
+}
               />
             ))}
 

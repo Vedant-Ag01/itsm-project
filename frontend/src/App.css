@@ -833,3 +833,113 @@ h1 {
     grid-template-columns: 1fr;
   }
 }
+.report-fields {
+  display: grid;
+  gap: 24px;
+  min-width: 0;
+  margin: 24px 0 0;
+  padding: 0;
+  border: 0;
+}
+
+.report-form-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 24px;
+}
+
+.report-field {
+  display: grid;
+  align-content: start;
+  gap: 8px;
+  min-width: 0;
+}
+
+.report-field label {
+  color: var(--text-primary);
+  font-size: 14px;
+  font-weight: 500;
+}
+
+.report-field input,
+.report-field select,
+.report-field textarea {
+  box-sizing: border-box;
+  width: 100%;
+  min-width: 0;
+  padding: 12px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--surface);
+  color: var(--text-primary);
+  font: inherit;
+}
+
+.report-field textarea {
+  resize: vertical;
+  min-height: 128px;
+}
+
+.report-field input:focus-visible,
+.report-field select:focus-visible,
+.report-field textarea:focus-visible {
+  outline: 2px solid var(--focus-ring);
+  outline-offset: 2px;
+}
+
+.report-field [aria-invalid="true"] {
+  border-color: var(--accent-text);
+}
+
+.report-field-error {
+  color: var(--accent-text);
+  font-size: 14px;
+}
+
+.report-help,
+.report-demo-note {
+  color: var(--text-secondary);
+  font-size: 13px;
+  line-height: 1.5;
+}
+
+.report-demo-note {
+  margin-bottom: 24px;
+}
+
+.report-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 16px;
+  margin-top: 16px;
+}
+
+.report-back-link {
+  display: inline-block;
+  margin-top: 20px;
+}
+
+.report-fields:disabled {
+  opacity: 0.7;
+}
+
+.report-fields:disabled button {
+  cursor: wait;
+}
+
+.report-duplicates {
+  margin-top: 24px;
+}
+
+.report-duplicate-list {
+  display: grid;
+  gap: 12px;
+  padding-left: 20px;
+}
+
+@media (max-width: 640px) {
+  .report-form-grid {
+    grid-template-columns: 1fr;
+  }
+}

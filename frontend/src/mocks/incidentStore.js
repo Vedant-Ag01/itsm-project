@@ -274,3 +274,145 @@ export function submitMockFeedback(id, rating, comment) {
 
   return copy(incident)
 }
+export function listMockServices() {
+  const services = new Map()
+
+  for (const incident of records.values()) {
+    services.set(incident.service.id, incident.service)
+  }
+
+  return structuredClone([...services.values()])
+}
+
+export function createMockIncident(input) {
+  const title = input.title?.trim()
+  const description = input.description?.trim()
+  const service = listMockServices().find(
+    (item) => item.id === Number(input.serviceId),
+  )
+  const levels = ['LOW', 'MEDIUM', 'HIGH']
+
+  if (!title || !description || !service) {
+    throw new ApiError('Enter a title, description and valid service.', 400)
+  }
+
+  if (
+    !levels.includes(input.impact) ||
+    !levels.includes(input.urgency)
+  ) {
+    throw new ApiError('Choose a valid impact and urgency.', 400)
+  }
+
+  if (
+    !Number.isInteger(input.affectedUsers) ||
+    input.affectedUsers < 1
+  ) {
+    throw new ApiError('Affected users must be a positive whole number.', 400)
+  }
+
+  // Demo classification only. The real backend owns these decisions.
+  const levelScores = { LOW: 1, MEDIUM: 2, HIGH: 3 }
+  const score = levelScores[input.impact] + levelScores[input.urgency]
+  const priority =
+    score === 6 ? 'P1' : score >= 5 ? 'P2' : score >= 3 ? 'P3' : 'P4'
+
+  const labels = {
+    P1: 'Critical',
+    P2: 'High',
+    P3: 'Medium',
+    P4: 'Low',
+  }
+
+  const deadlines = {
+    P1: [5, 30],
+    P2: [15, 120],
+    P3: [60, 480],
+    P4: [240, 1440],
+  }
+
+  const matchingServiceIncident = [...records.values()].find(
+    (incident) => incident.service.id === service.id,
+  )
+
+  let nextNumber = 1000
+
+  for (const existingId of records.keys()) {
+    const number = Number(existingId.replace(/^INC/, ''))
+
+    if (Number.isFinite(number)) {
+      nextNumber = Math.max(nextNumber, number)
+    }
+  }
+
+  const id = `INC${nextNumber + 1}`
+  const createdAt = localTimestamp(new Date())
+  const [responseMinutes, resolutionMinutes] = deadlines[priority]
+
+  // Exact-title matching is only a predictable demo for the duplicate UI.
+  const possibleDuplicates = [...records.values()]
+    .filter(
+      (incident) =>
+        incident.title.toLowerCase() === title.toLowerCase() &&
+        !['VERIFIED', 'CLOSED'].includes(incident.status),
+    )
+    .map((incident) => ({
+      id: incident.id,
+      title: incident.title,
+      score: 1,
+    }))
+
+  const incident = {
+    id,
+    title,
+    description,
+    category: matchingServiceIncident?.category ?? 'APPLICATION',
+    service,
+    impact: input.impact,
+    urgency: input.urgency,
+    affectedUsers: input.affectedUsers,
+    priority,
+    priorityLabel: labels[priority],
+    status: 'CLASSIFIED',
+    reporter: { id: 'E1', name: 'Naman' },
+    assignedTechnician: null,
+    createdAt,
+    acknowledgedAt: null,
+    resolvedAt: null,
+    closedAt: null,
+    responseDeadline: addMinutes(createdAt, responseMinutes),
+    resolutionDeadline: addMinutes(createdAt, resolutionMinutes),
+    slaStatus: 'ON_TRACK',
+    resolutionNote: null,
+    closureNote: null,
+    notes: [],
+    feedback: null,
+  }
+
+  records.set(id, incident)
+
+  histories.set(id, [
+    {
+      timestamp: createdAt,
+      user: 'Naman (E1)',
+      action: 'CREATED',
+      incidentId: id,
+      previousStatus: null,
+      newStatus: 'NEW',
+      description: 'Incident reported by Naman',
+    },
+    {
+      timestamp: createdAt,
+      user: 'System',
+      action: 'PRIORITY_CALCULATED',
+      incidentId: id,
+      previousStatus: 'NEW',
+      newStatus: 'CLASSIFIED',
+      description: `Demo classification assigned priority ${priority}`,
+    },
+  ])
+
+  return structuredClone({
+    incident: { id, status: incident.status, title },
+    possibleDuplicates,
+  })
+}
