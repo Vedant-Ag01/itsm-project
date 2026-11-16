@@ -947,3 +947,52 @@ h1 {
 .login-shell { min-height: 100vh; display: grid; place-items: center; padding: 24px; }
 .login-panel { width: min(100%, 480px); }
 .account-actions { display: flex; flex-wrap: wrap; gap: 8px; }
+
+.overview-primary {
+  display: grid;
+  grid-template-columns: minmax(0, 2fr) minmax(260px, 1fr);
+  gap: 24px;
+  align-items: start;
+}
+
+.overview-primary > * {
+  min-width: 0;
+}
+
+.report-trend {
+  display: grid;
+  grid-template-columns: repeat(7, minmax(0, 1fr));
+  gap: 8px;
+  list-style: none;
+  padding: 0;
+  margin: 16px 0 0;
+}
+
+.report-trend li {
+  display: grid;
+  gap: 8px;
+  text-align: center;
+  font-size: 13px;
+}
+
+.report-trend-column {
+  display: flex;
+  flex-direction: column-reverse;
+  align-items: center;
+  gap: 4px;
+  height: 112px;
+  border-bottom: 1px solid var(--border);
+}
+
+.report-trend-bar {
+  display: block;
+  width: min(65%, 28px);
+  border-radius: 4px 4px 0 0;
+  background: var(--action);
+}
+
+@media (max-width: 1100px) {
+  .overview-primary {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}

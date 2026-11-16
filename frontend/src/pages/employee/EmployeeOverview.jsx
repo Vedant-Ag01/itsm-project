@@ -66,6 +66,91 @@ const columns = [
   },
 ]
 
+
+function RecentReports({ items, isReady }) {
+  const recent = [...items]
+    .sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt))
+    .slice(0, 4)
+
+  return (
+    <Card title="Recent reports">
+      {!isReady ? (
+        <p className="subtitle">Incident data is not available yet.</p>
+      ) : recent.length === 0 ? (
+        <p className="subtitle">You haven’t reported any incidents yet.</p>
+      ) : (
+        <ol className="audit-timeline">
+          {recent.map((incident) => (
+            <li key={incident.id}>
+              <Link
+                className="incident-link"
+                to={`/employee/incidents/${encodeURIComponent(incident.id)}`}
+              >
+                {incident.title}
+              </Link>
+              <span>{incident.id}</span>
+              <time dateTime={incident.createdAt}>
+                {new Date(incident.createdAt).toLocaleString('en-IN', {
+                  dateStyle: 'medium',
+                  timeStyle: 'short',
+                })}
+              </time>
+            </li>
+          ))}
+        </ol>
+      )}
+    </Card>
+  )
+}
+
+function ReportsTrend({ items, isReady }) {
+  const today = new Date()
+  const days = Array.from({ length: 7 }, (_, index) => {
+    const date = new Date(today)
+    date.setDate(today.getDate() - (6 - index))
+    date.setHours(0, 0, 0, 0)
+
+    const nextDay = new Date(date)
+    nextDay.setDate(date.getDate() + 1)
+
+    return {
+      key: date.getTime(),
+      label: date.toLocaleDateString('en-IN', { weekday: 'short' }),
+      count: items.filter(({ createdAt }) => {
+        const created = new Date(createdAt)
+        return created >= date && created < nextDay
+      }).length,
+    }
+  })
+  const max = Math.max(1, ...days.map(({ count }) => count))
+
+  return (
+    <Card title="Reports over the last 7 days">
+      {!isReady ? (
+        <p className="subtitle">Incident data is not available yet.</p>
+      ) : (
+        <ul className="report-trend">
+          {days.map(({ key, label, count }) => (
+            <li key={key}>
+              <div className="report-trend-column">
+                {count > 0 && (
+                  <span
+                    className="report-trend-bar"
+                    style={{ height: `${(count / max) * 75}%` }}
+                    aria-hidden="true"
+                  />
+                )}
+                <span>{count}</span>
+              </div>
+              <span>{label}</span>
+            </li>
+          ))}
+        </ul>
+      )}
+    </Card>
+  )
+}
+
 export default function EmployeeOverview() {
   const [loadState, setLoadState] = useState({
     phase: 'loading',
@@ -197,90 +282,96 @@ export default function EmployeeOverview() {
         ))}
       </div>
 
-      <Card
-        title="My incidents"
-        action={
-          <span className="preview-badge">
-            {USING_MOCKS ? 'Demo records' : 'Your records'}
-          </span>
-      }
-      >
-        {phase === 'loading' && (
-          <div className="empty-state" role="status">
-            <p>Loading incidents…</p>
-          </div>
-        )}
+           <div className="overview-primary">
+        <Card
+          title="My incidents"
+          action={
+            <span className="preview-badge">
+              {USING_MOCKS ? 'Demo records' : 'Your records'}
+            </span>
+          }
+        >
+          {phase === 'loading' && (
+            <div className="empty-state" role="status">
+              <p>Loading incidents…</p>
+            </div>
+          )}
 
-        {phase === 'error' && (
-          <div className="empty-state">
-            <p role="alert">{error}</p>
-            <button
-              className="secondary-button"
-              type="button"
-              onClick={retry}
-            >
-              Try again
-            </button>
-          </div>
-        )}
-
-        {isReady && (
-          <>
-            <div className="table-toolbar">
-              <label className="filter-field search-field">
-                <span>Search incidents</span>
-                <input
-                  type="search"
-                  placeholder="ID, title or service"
-                  value={search}
-                  onChange={(event) => setSearch(event.target.value)}
-                />
-              </label>
-
-              <label className="filter-field">
-                <span>Status</span>
-                <select
-                  value={status}
-                  onChange={(event) => setStatus(event.target.value)}
-                >
-                  <option value="">All statuses</option>
-                  {statusOptions.map(([value, label]) => (
-                    <option key={value} value={value}>
-                      {label}
-                    </option>
-                  ))}
-                </select>
-              </label>
-
+          {phase === 'error' && (
+            <div className="empty-state">
+              <p role="alert">{error}</p>
               <button
                 className="secondary-button"
                 type="button"
-                onClick={clearFilters}
-                disabled={!search && !status}
+                onClick={retry}
               >
-                Clear
+                Try again
               </button>
             </div>
+          )}
 
-            <p className="results-count" role="status">
-              Showing {filteredItems.length} of {items.length} incidents
-            </p>
+          {isReady && (
+            <>
+              <div className="table-toolbar">
+                <label className="filter-field search-field">
+                  <span>Search incidents</span>
+                  <input
+                    type="search"
+                    placeholder="ID, title or service"
+                    value={search}
+                    onChange={(event) => setSearch(event.target.value)}
+                  />
+                </label>
 
-            <DataTable
-              columns={columns}
-              rows={filteredItems}
-              caption="Your incidents with service, priority, status and SLA"
-              emptyMessage={
-                items.length === 0
-                  ? 'You have no incidents yet.'
-                  : 'No incidents match your filters.'
-              }
-            />
-          </>
-        )}
-      </Card>
+                <label className="filter-field">
+                  <span>Status</span>
+                  <select
+                    value={status}
+                    onChange={(event) => setStatus(event.target.value)}
+                  >
+                    <option value="">All statuses</option>
+                    {statusOptions.map(([value, label]) => (
+                      <option key={value} value={value}>
+                        {label}
+                      </option>
+                    ))}
+                  </select>
+                </label>
+
+                <button
+                  className="secondary-button"
+                  type="button"
+                  onClick={clearFilters}
+                  disabled={!search && !status}
+                >
+                  Clear
+                </button>
+              </div>
+
+              <p className="results-count" role="status">
+                Showing {filteredItems.length} of {items.length} incidents
+              </p>
+
+              <DataTable
+                columns={columns}
+                rows={filteredItems}
+                caption="Your incidents with service, priority, status and SLA"
+                emptyMessage={
+                  items.length === 0
+                    ? 'You have no incidents yet.'
+                    : 'No incidents match your filters.'
+                }
+              />
+            </>
+          )}
+        </Card>
+
+        <RecentReports items={items} isReady={isReady} />
+      </div>
 
       <div className="dashboard-grid overview-bottom">
+        <ReportsTrend items={items} isReady={isReady} />
+
         <Card title="Needs your attention">
           {!isReady ? (
             <p className="subtitle">Incident data is not available yet.</p>
@@ -295,26 +386,19 @@ export default function EmployeeOverview() {
                   <div>
                     <span className="incident-id">{incident.id}</span>
                     <h3>{incident.title}</h3>
-                    <p>
-                      Resolution ready for your review. Verification
-                      will be available on the incident details page.
-                    </p>
+                    <p>Check that the issue is fixed before verifying.</p>
                   </div>
-                  <StatusBadge value={incident.status} />
+
+                  <Link
+                    className="incident-link"
+                    to={`/employee/incidents/${encodeURIComponent(incident.id)}`}
+                  >
+                    Review resolution
+                  </Link>
                 </li>
               ))}
             </ul>
           )}
-        </Card>
-
-        <Card title="Incident activity">
-          <div className="empty-state">
-            <h3>Audit timeline comes next</h3>
-            <p>
-              Activity will use the selected incident’s audit endpoint.
-              The incident list does not include its history.
-            </p>
-          </div>
         </Card>
       </div>
     </>
