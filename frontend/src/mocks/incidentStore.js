@@ -189,6 +189,7 @@ export function listMockIncidents(filters = {}) {
       assignedTechnician: incident.assignedTechnician?.name ?? null,
       slaStatus: incident.slaStatus,
       createdAt: incident.createdAt,
+      resolvedAt: incident.resolvedAt,
     }))
 
   return copy({ total: items.length, items })

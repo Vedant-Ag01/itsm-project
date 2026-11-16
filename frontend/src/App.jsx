@@ -3,6 +3,7 @@ import { Navigate, Route, Routes } from 'react-router'
 import WorkspaceLayout from './layouts/WorkspaceLayout'
 import { pageUrl, workspaces } from './layouts/workspaces'
 import EmployeeOverview from './pages/employee/EmployeeOverview'
+import Notifications from './pages/employee/Notifications'
 import MyIncidents from './pages/employee/MyIncidents'
 import IncidentDetails from './pages/employee/IncidentDetails'
 import PlaceholderPage from './pages/PlaceholderPage'
@@ -86,6 +87,8 @@ export default function App() {
     <MyIncidents />
   ) : role === 'employee' && page.path === 'report' ? (
     USING_MOCKS ? <ReportIncident /> : <LiveReportIncident />
+  ) : role === 'employee' && page.path === 'notifications' ? (
+    <Notifications />
   ) : (
     <PlaceholderPage title={page.label} role={role} />
   )

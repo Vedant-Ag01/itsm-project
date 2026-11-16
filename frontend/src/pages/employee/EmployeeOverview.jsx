@@ -103,7 +103,7 @@ function RecentReports({ items, isReady }) {
   )
 }
 
-function ReportsTrend({ items, isReady }) {
+function ResolutionTrend({ items, isReady }) {
   const today = new Date()
   const days = Array.from({ length: 7 }, (_, index) => {
     const date = new Date(today)
@@ -116,16 +116,17 @@ function ReportsTrend({ items, isReady }) {
     return {
       key: date.getTime(),
       label: date.toLocaleDateString('en-IN', { weekday: 'short' }),
-      count: items.filter(({ createdAt }) => {
-        const created = new Date(createdAt)
-        return created >= date && created < nextDay
+      count: items.filter(({ resolvedAt }) => {
+        if (!resolvedAt) return false
+        const resolved = new Date(resolvedAt)
+        return resolved >= date && resolved < nextDay
       }).length,
     }
   })
   const max = Math.max(1, ...days.map(({ count }) => count))
 
   return (
-    <Card title="Reports over the last 7 days">
+    <Card title="Resolutions over the last 7 days">
       {!isReady ? (
         <p className="subtitle">Incident data is not available yet.</p>
       ) : (
@@ -225,10 +226,13 @@ export default function EmployeeOverview() {
       ).length,
     },
     {
-      label: 'Closed incidents',
-      count: items.filter(
-        (incident) => incident.status === 'CLOSED',
-      ).length,
+      label: 'Resolved this month',
+      count: items.filter(({ resolvedAt }) => {
+        if (!resolvedAt) return false
+        const resolved = new Date(resolvedAt)
+        const now = new Date()
+        return resolved.getFullYear() === now.getFullYear() && resolved.getMonth() === now.getMonth()
+      }).length,
     },
   ]
 
@@ -370,7 +374,7 @@ export default function EmployeeOverview() {
       </div>
 
       <div className="dashboard-grid overview-bottom">
-        <ReportsTrend items={items} isReady={isReady} />
+        <ResolutionTrend items={items} isReady={isReady} />
 
         <Card title="Needs your attention">
           {!isReady ? (
