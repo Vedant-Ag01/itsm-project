@@ -13,9 +13,9 @@ function readSeen(key) {
   }
 }
 
-export default function Notifications() {
+export default function Notifications({ role = 'employee' }) {
   const { user } = useSession()
-  const key = `itsm-seen-resolutions:${user.userId}`
+  const key = `itsm-seen-updates:${role}:${user.userId}`
   const [seen, setSeen] = useState(() => readSeen(key))
   const [result, setResult] = useState(null)
   const [error, setError] = useState('')
@@ -44,14 +44,15 @@ export default function Notifications() {
   }
 
   const resolutions = (result ?? [])
-    .filter(({ resolvedAt }) => resolvedAt)
-    .sort((a, b) => new Date(b.resolvedAt) - new Date(a.resolvedAt))
+    .filter((item) => role === 'technician' || item.resolvedAt)
+    .map((item) => ({ ...item, updateTime: item.closedAt || item.resolvedAt || item.acknowledgedAt || item.createdAt }))
+    .sort((a, b) => new Date(b.updateTime) - new Date(a.updateTime))
 
   return (
     <>
       <div className="page-heading"><h1>Notifications</h1></div>
-      <Card title="Resolution updates">
-        <p className="subtitle">Read status is saved in this browser.</p>
+      <Card title={role === 'technician' ? 'Assignment updates' : 'Resolution updates'}>
+        <p className="subtitle">Updates are derived from your current incidents, not a notification inbox. Read status is saved in this browser.</p>
         {error ? (
           <>
             <p role="alert">{error}</p>
@@ -61,22 +62,22 @@ export default function Notifications() {
             }}>Try again</button>
           </>
         ) : !result ? (
-          <p role="status">Loading resolution updates…</p>
+          <p role="status">Loading incident updates…</p>
         ) : resolutions.length === 0 ? (
-          <p>No resolutions to show yet.</p>
+          <p>No incident updates to show yet.</p>
         ) : (
           <ul className="attention-list">
             {resolutions.map((incident) => {
-              const id = `${incident.id}:${incident.resolvedAt}`
+              const id = `${incident.id}:${incident.status}:${incident.updateTime}`
               return (
                 <li key={id}>
                   <div>
                     <span className="incident-id">{incident.id}</span>
                     <h3>{incident.title}</h3>
-                    <p>Resolved <time dateTime={incident.resolvedAt}>
-                      {new Date(incident.resolvedAt).toLocaleString('en-IN')}
+                    <p>{incident.status.replaceAll('_', ' ')} · <time dateTime={incident.updateTime}>
+                      {new Date(incident.updateTime).toLocaleString('en-IN')}
                     </time></p>
-                    <Link className="incident-link" to={`/employee/incidents/${encodeURIComponent(incident.id)}`}>
+                    <Link className="incident-link" to={`/${role}/incidents/${encodeURIComponent(incident.id)}`}>
                       View incident
                     </Link>
                   </div>

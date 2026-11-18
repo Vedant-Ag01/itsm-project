@@ -21,7 +21,7 @@ export default function WorkspaceLayout({ role, theme, onToggle }) {
     (page) => pageUrl(role, page.path) === normalizedPath,
   )
 
-  const title = /^\/employee\/incidents\/[^/]+$/.test(normalizedPath)
+  const title = /^\/(employee|technician)\/incidents\/[^/]+$/.test(normalizedPath)
     ? 'Incident details' : currentPage?.label ?? 'Page not found'
 
   useEffect(() => {

@@ -3,6 +3,7 @@ import { Navigate, Route, Routes } from 'react-router'
 import WorkspaceLayout from './layouts/WorkspaceLayout'
 import { pageUrl, workspaces } from './layouts/workspaces'
 import EmployeeOverview from './pages/employee/EmployeeOverview'
+import Workload from './pages/technician/Workload'
 import Notifications from './pages/employee/Notifications'
 import MyIncidents from './pages/employee/MyIncidents'
 import IncidentDetails from './pages/employee/IncidentDetails'
@@ -67,7 +68,7 @@ export default function App() {
             element={
               role === 'employee'
                 ? <EmployeeOverview />
-                : (
+                : role === 'technician' ? <MyIncidents role="technician" /> : (
                   <PlaceholderPage
                     title={workspace.pages[0].label}
                     role={role}
@@ -87,8 +88,10 @@ export default function App() {
     <MyIncidents />
   ) : role === 'employee' && page.path === 'report' ? (
     USING_MOCKS ? <ReportIncident /> : <LiveReportIncident />
-  ) : role === 'employee' && page.path === 'notifications' ? (
-    <Notifications />
+  ) : ['employee', 'technician'].includes(role) && page.path === 'notifications' ? (
+    <Notifications role={role} />
+  ) : role === 'technician' && page.path === 'workload' ? (
+    <Workload />
   ) : (
     <PlaceholderPage title={page.label} role={role} />
   )
@@ -96,8 +99,8 @@ export default function App() {
               />
             ))}
 
-          {role === 'employee' && (
-            <Route path="incidents/:id" element={<IncidentDetails />} />
+          {['employee', 'technician'].includes(role) && (
+            <Route path="incidents/:id" element={<IncidentDetails role={role} />} />
           )}
 
           <Route

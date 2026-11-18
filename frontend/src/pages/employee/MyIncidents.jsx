@@ -20,7 +20,7 @@ const statuses = [
   'CLOSED',
 ]
 
-const columns = [
+const makeColumns = (role) => [
   {
     key: 'incident',
     label: 'Incident',
@@ -29,7 +29,7 @@ const columns = [
         <span className="incident-id">{incident.id}</span>
         <Link
           className="incident-link"
-          to={`/employee/incidents/${incident.id}`}
+          to={`/${role}/incidents/${encodeURIComponent(incident.id)}`}
         >
           {incident.title}
         </Link>
@@ -54,7 +54,9 @@ const columns = [
   },
 ]
 
-export default function MyIncidents() {
+export default function MyIncidents({ role = 'employee' }) {
+  const technician = role === 'technician'
+  const columns = makeColumns(role)
   const [state, setState] = useState({
     phase: 'loading',
     items: [],
@@ -109,13 +111,13 @@ export default function MyIncidents() {
     <>
       <div className="page-heading">
         <div>
-          <p className="eyebrow">Employee workspace</p>
-          <h1>My incidents</h1>
+          <p className="eyebrow">{technician ? 'Technician workspace' : 'Employee workspace'}</p>
+          <h1>{technician ? 'Assigned incidents' : 'My incidents'}</h1>
           <p className="subtitle">Open an incident to view updates and respond.</p>
         </div>
-        <Link className="primary-button" to="/employee/report">
+        {!technician && <Link className="primary-button" to="/employee/report">
           + Report incident
-        </Link>
+        </Link>}
       </div>
 
       {USING_MOCKS && (
@@ -124,7 +126,7 @@ export default function MyIncidents() {
         </div>
       )}
 
-      <Card title="Your incidents">
+      <Card title={technician ? "Your assigned incidents" : "Your incidents"} action={<button className="secondary-button" onClick={retry}>Refresh</button>}>
         {state.phase === 'loading' && (
           <div className="empty-state" role="status">Loading incidents…</div>
         )}
@@ -200,11 +202,11 @@ export default function MyIncidents() {
             <DataTable
               columns={columns}
               rows={visible}
-              caption="Your reported incidents"
+              caption={technician ? 'Your assigned incidents' : 'Your reported incidents'}
               emptyMessage={
                 state.items.length
                   ? 'No incidents match your filters.'
-                  : 'You have not reported any incidents yet.'
+                  : technician ? 'No incidents are assigned to you yet.' : 'You have not reported any incidents yet.'
               }
             />
           </>
