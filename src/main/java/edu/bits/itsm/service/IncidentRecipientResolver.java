@@ -29,6 +29,7 @@ public class IncidentRecipientResolver implements RecipientResolver {
         switch (event.type()) {
             case CREATED, DUPLICATE_FLAGGED -> recipients.addAll(adminEmails);
             case SLA_BREACHED, ESCALATED -> recipients.addAll(adminEmails);
+            case PRIORITY_CHANGED -> recipients.addAll(adminEmails);
             default -> { }
         }
 
@@ -46,6 +47,10 @@ public class IncidentRecipientResolver implements RecipientResolver {
                 case ACKNOWLEDGED, WORK_STARTED, RESOLVED -> add(recipients, reporter);
                 case VERIFIED, CLOSED -> { add(recipients, reporter); add(recipients, technician); }
                 case SLA_WARNING -> add(recipients, technician);
+                case INCIDENT_UPDATED -> add(recipients, technician);
+                case INFO_REQUESTED -> add(recipients, reporter);
+                case INFO_PROVIDED -> add(recipients, technician);
+                case PRIORITY_CHANGED -> { add(recipients, reporter); add(recipients, technician); }
                 case SLA_BREACHED, ESCALATED -> { add(recipients, reporter); add(recipients, technician); }
                 default -> { }
             }

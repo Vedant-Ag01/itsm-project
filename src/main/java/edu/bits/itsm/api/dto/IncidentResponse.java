@@ -24,7 +24,8 @@ public record IncidentResponse(
         String resolutionNote,
         String closureNote,
         Integer feedbackRating,
-        String feedbackComment) {
+        String feedbackComment,
+        boolean awaitingInfo) {
 
     // Turns a domain Incident into the shape we send out
     public static IncidentResponse from(Incident incident) {
@@ -70,6 +71,7 @@ public record IncidentResponse(
                 incident.getResolutionNote(),
                 incident.getClosureNote(),
                 rating,
-                ratingComment);
+                ratingComment,
+                incident.isAwaitingInfo());
     }
 }

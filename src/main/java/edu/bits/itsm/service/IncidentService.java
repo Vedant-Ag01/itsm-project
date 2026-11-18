@@ -9,6 +9,10 @@ import edu.bits.itsm.domain.IncidentCategory;
 import edu.bits.itsm.domain.IncidentNotFoundException;
 import edu.bits.itsm.domain.IncidentStatus;
 import edu.bits.itsm.domain.InvestigationNote;
+import edu.bits.itsm.domain.InvalidIncidentException;
+import edu.bits.itsm.domain.InvalidStateTransitionException;
+import edu.bits.itsm.domain.NoteType;
+import edu.bits.itsm.domain.TechnicianOverloadedException;
 import edu.bits.itsm.domain.ItService;
 import edu.bits.itsm.domain.Priority;
 import edu.bits.itsm.domain.Technician;
@@ -41,6 +45,9 @@ public class IncidentService {
     private final DuplicateDetector duplicateDetector;
     private final List<IncidentObserver> observers;
     private final List<Technician> technicians;
+
+    // the most active incidents one technician may hold at the same time (admin can change it)
+    private int maxActivePerTechnician = 8;
 
     public IncidentService(IncidentRepository repository,
                            IncidentFactory factory,
@@ -90,14 +97,48 @@ public class IncidentService {
         return new CreationResult(incident, duplicates);
     }
 
+    // ---------- updating an incident ----------
+
+    // Changes the details, recalculates the priority, and tells everyone if it moved.
+    // Anything passed as null stays as it is.
+    public Incident updateIncident(String incidentId, String actor, String title,
+                                   String description, Impact impact, Urgency urgency,
+                                   Integer affectedUsers) {
+        Incident incident = findOrThrow(incidentId);
+        Priority oldPriority = incident.getPriority();
+
+        incident.update(title, description, impact, urgency, affectedUsers);
+
+        Priority newPriority = priorityStrategy.calculate(incident.getImpact(),
+                incident.getUrgency(), incident.getService().getCriticality(),
+                incident.getAffectedUsers());
+        incident.setPriority(newPriority);
+        repository.save(incident);
+
+        IncidentStatus status = incident.getStatus();
+        publish(incident, IncidentEventType.INCIDENT_UPDATED, actor, status,
+                "Incident details updated by " + actor);
+        if (newPriority != oldPriority) {
+            publish(incident, IncidentEventType.PRIORITY_CHANGED, actor, status,
+                    "Priority changed from " + oldPriority + " to " + newPriority);
+        }
+        return incident;
+    }
+
     // ---------- assignment ----------
 
     // The system picks the technician using the current strategy.
     public Incident autoAssign(String incidentId, String actor) {
         Incident incident = findOrThrow(incidentId);
-        List<Technician> candidates = availableTechnicians();
+        Map<Technician, Integer> load = currentLoad();
+        List<Technician> candidates = new java.util.ArrayList<>();
+        for (Technician technician : availableTechnicians()) {
+            if (load.getOrDefault(technician, 0) < maxActivePerTechnician) {
+                candidates.add(technician);
+            }
+        }
         Technician chosen = assignmentStrategy
-                .selectTechnician(incident, candidates, currentLoad())
+                .selectTechnician(incident, candidates, load)
                 .orElseThrow(() -> new TechnicianUnavailableException(incidentId));
         return assignTo(incidentId, chosen, actor);
     }
@@ -106,6 +147,13 @@ public class IncidentService {
     public Incident assignTo(String incidentId, Technician technician, String actor) {
         Incident incident = findOrThrow(incidentId);
         IncidentStatus before = incident.getStatus();
+        if (technician != null) {
+            int load = currentLoad().getOrDefault(technician, 0);
+            if (load >= maxActivePerTechnician) {
+                throw new TechnicianOverloadedException(technician.getName(), load,
+                        maxActivePerTechnician);
+            }
+        }
         incident.assign(technician);
         repository.save(incident);
         publish(incident, IncidentEventType.ASSIGNED, actor, before,
@@ -115,6 +163,22 @@ public class IncidentService {
 
     public void changeAssignmentStrategy(AssignmentStrategy newStrategy) {
         this.assignmentStrategy = newStrategy;
+    }
+
+    public int getMaxActivePerTechnician() {
+        return maxActivePerTechnician;
+    }
+
+    public void setMaxActivePerTechnician(int limit) {
+        if (limit < 1) {
+            throw new IllegalArgumentException("The workload limit must be at least 1");
+        }
+        this.maxActivePerTechnician = limit;
+    }
+
+    // how many incidents this technician is actively working on right now
+    public int activeLoadOf(Technician technician) {
+        return currentLoad().getOrDefault(technician, 0);
     }
 
     public String getAssignmentStrategyName() {
@@ -166,6 +230,41 @@ public class IncidentService {
         repository.save(incident);
         publish(incident, IncidentEventType.CLOSED, actor, before, "Closed: " + closureNote);
         return incident;
+    }
+
+    // ---------- asking the reporter for more information ----------
+
+    // A technician (or admin) asks the reporter a question. The incident keeps its status.
+    public Incident requestInformation(String incidentId, User author, String message) {
+        Incident incident = findOrThrow(incidentId);
+        requireOpenForInfo(incident, "request information on");
+        incident.addInvestigationNote(new InvestigationNote(author, message, NoteType.INFO_REQUEST));
+        repository.save(incident);
+        publish(incident, IncidentEventType.INFO_REQUESTED, author.getName(), incident.getStatus(),
+                "More information requested: " + message);
+        return incident;
+    }
+
+    // The reporter (or an admin) answers it.
+    public Incident provideInformation(String incidentId, User author, String message) {
+        Incident incident = findOrThrow(incidentId);
+        requireOpenForInfo(incident, "provide information for");
+        if (!incident.isAwaitingInfo()) {
+            throw new InvalidIncidentException("No information has been requested for this incident");
+        }
+        incident.addInvestigationNote(new InvestigationNote(author, message, NoteType.INFO_RESPONSE));
+        repository.save(incident);
+        publish(incident, IncidentEventType.INFO_PROVIDED, author.getName(), incident.getStatus(),
+                "Information provided: " + message);
+        return incident;
+    }
+
+    private void requireOpenForInfo(Incident incident, String action) {
+        IncidentStatus status = incident.getStatus();
+        if (status == IncidentStatus.RESOLVED || status == IncidentStatus.VERIFIED
+                || status == IncidentStatus.CLOSED) {
+            throw new InvalidStateTransitionException(status, action);
+        }
     }
 
     // ---------- notes and feedback ----------

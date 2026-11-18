@@ -7,15 +7,21 @@ import java.util.List;
 
 public class Incident {
 
+    public static final int MAX_TITLE_LENGTH = 200;
+    public static final int MAX_DESCRIPTION_LENGTH = 2000;
+    public static final int MAX_AFFECTED_USERS = 100000;
+
     // ---------- set once, never changes ----------
+    // (title, description, impact, urgency and affectedUsers can be corrected
+    //  with update() until the incident is resolved)
     private final String id;
     private final Employee reporter;
-    private final String title;
-    private final String description;
+    private String title;
+    private String description;
     private final ItService service;
-    private final Impact impact;
-    private final Urgency urgency;
-    private final int affectedUsers;
+    private Impact impact;
+    private Urgency urgency;
+    private int affectedUsers;
     private final LocalDateTime createdAt;
 
     // ---------- filled in as the incident progresses ----------
@@ -178,6 +184,61 @@ public class Incident {
         this.closedAt = LocalDateTime.now();
     }
 
+    // The reporter (or an admin) corrects the details. Anything passed as null stays as it is.
+    // Allowed only until the incident is resolved: after that the facts are history.
+    public void update(String title, String description, Impact impact,
+                       Urgency urgency, Integer affectedUsers) {
+        IncidentStatus status = getStatus();
+        if (status == IncidentStatus.RESOLVED
+                || status == IncidentStatus.VERIFIED
+                || status == IncidentStatus.CLOSED) {
+            throw new InvalidStateTransitionException(status, "edit");
+        }
+        if (title != null && title.isBlank()) {
+            throw new InvalidIncidentException("Incident title cannot be empty");
+        }
+        if (description != null && description.isBlank()) {
+            throw new InvalidIncidentException("Incident description cannot be empty");
+        }
+        if (affectedUsers != null && affectedUsers < 1) {
+            throw new InvalidIncidentException("At least one user must be affected");
+        }
+        checkFieldSizes(title, description, affectedUsers);
+        // all checks passed, now change things
+        if (title != null) {
+            this.title = title;
+        }
+        if (description != null) {
+            this.description = description;
+        }
+        if (impact != null) {
+            this.impact = impact;
+        }
+        if (urgency != null) {
+            this.urgency = urgency;
+        }
+        if (affectedUsers != null) {
+            this.affectedUsers = affectedUsers;
+        }
+    }
+
+    // Size limits, so the database never receives something too long or absurd.
+    // Called when an incident is reported and when it is edited.
+    public static void checkFieldSizes(String title, String description, Integer affectedUsers) {
+        if (title != null && title.length() > MAX_TITLE_LENGTH) {
+            throw new InvalidIncidentException(
+                    "Title must be at most " + MAX_TITLE_LENGTH + " characters");
+        }
+        if (description != null && description.length() > MAX_DESCRIPTION_LENGTH) {
+            throw new InvalidIncidentException(
+                    "Description must be at most " + MAX_DESCRIPTION_LENGTH + " characters");
+        }
+        if (affectedUsers != null && affectedUsers > MAX_AFFECTED_USERS) {
+            throw new InvalidIncidentException(
+                    "Affected users cannot be more than " + MAX_AFFECTED_USERS);
+        }
+    }
+
     // ---------- other actions ----------
 
     public void addInvestigationNote(InvestigationNote note) {
@@ -287,6 +348,20 @@ public class Incident {
 
     public List<InvestigationNote> getInvestigationNotes() {
         return Collections.unmodifiableList(investigationNotes);
+    }
+
+    // True when a technician asked for more information and the reporter has not answered yet
+    public boolean isAwaitingInfo() {
+        for (int i = investigationNotes.size() - 1; i >= 0; i--) {
+            NoteType type = investigationNotes.get(i).getType();
+            if (type == NoteType.INFO_REQUEST) {
+                return true;
+            }
+            if (type == NoteType.INFO_RESPONSE) {
+                return false;
+            }
+        }
+        return false;
     }
 
     public Feedback getFeedback() {

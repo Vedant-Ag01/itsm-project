@@ -4,6 +4,7 @@ import edu.bits.itsm.api.dto.CreateIncidentRequest;
 import edu.bits.itsm.api.dto.CreateIncidentResponse;
 import edu.bits.itsm.api.dto.IncidentResponse;
 import edu.bits.itsm.api.dto.NoteActionRequest;
+import edu.bits.itsm.api.dto.UpdateIncidentRequest;
 import edu.bits.itsm.auth.AllowedRoles;
 import edu.bits.itsm.auth.CurrentUser;
 import edu.bits.itsm.auth.ForbiddenException;
@@ -29,6 +30,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
@@ -147,6 +149,22 @@ public class IncidentController {
         Incident incident = incidentService.getIncident(id);
         IncidentAccess.requireCanSee(CurrentUser.get(), incident);
         return IncidentResponse.from(incident);
+    }
+
+    // The reporter (or an admin) corrects the details. The priority is recalculated.
+    @PutMapping("/{id}")
+    @AllowedRoles({Role.EMPLOYEE, Role.ADMIN})
+    public IncidentResponse update(@PathVariable String id,
+                                   @RequestBody UpdateIncidentRequest request) {
+        UserAccount user = CurrentUser.get();
+        Incident incident = incidentService.getIncident(id);
+        if (user.role != Role.ADMIN && !incident.getReporter().getId().equals(user.id)) {
+            throw new ForbiddenException("Only the person who reported this incident can edit it");
+        }
+        Incident updated = incidentService.updateIncident(id, user.name, request.title(),
+                request.description(), request.impact(), request.urgency(),
+                request.affectedUsers());
+        return IncidentResponse.from(updated);
     }
 
     // ---------- lifecycle actions ----------

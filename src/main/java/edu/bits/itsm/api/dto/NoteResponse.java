@@ -8,13 +8,15 @@ public record NoteResponse(
         String authorName,
         String authorRole,
         String text,
-        LocalDateTime createdAt) {
+        LocalDateTime createdAt,
+        String type) {
 
     public static NoteResponse from(InvestigationNote note) {
         return new NoteResponse(
                 note.getAuthor().getName(),
                 note.getAuthor().getRoleName(),
                 note.getText(),
-                note.getCreatedAt());
+                note.getCreatedAt(),
+                note.getType().name());
     }
 }

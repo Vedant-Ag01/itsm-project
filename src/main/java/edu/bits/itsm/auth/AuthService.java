@@ -28,7 +28,7 @@ public class AuthService {
             throw new AuthenticationFailedException("Invalid email or password");
         }
 
-        Optional<UserAccount> found = users.findByEmail(email);
+        Optional<UserAccount> found = users.findByEmail(UserManagementService.normalizeEmail(email));
         if (found.isEmpty()) {
             throw new AuthenticationFailedException("Invalid email or password");
         }
@@ -37,13 +37,18 @@ public class AuthService {
         if (!PasswordHasher.matches(password, account.passwordSalt, account.passwordHash)) {
             throw new AuthenticationFailedException("Invalid email or password");
         }
+        if (!account.isActive()) {
+            throw new AuthenticationFailedException(
+                    "This account has been switched off. Contact an administrator.");
+        }
 
         String token = UUID.randomUUID().toString();
         tokens.put(token, account.id);
         return new LoginResult(token, account);
     }
 
-    // Who does this token belong to? Empty if the token is unknown.
+    // Who does this token belong to? Empty if the token is unknown
+    // or the account has been switched off since the user logged in.
     public Optional<UserAccount> findByToken(String token) {
         if (token == null) {
             return Optional.empty();
@@ -52,7 +57,7 @@ public class AuthService {
         if (userId == null) {
             return Optional.empty();
         }
-        return users.findById(userId);
+        return users.findById(userId).filter(UserAccount::isActive);
     }
 
     public void logout(String token) {
