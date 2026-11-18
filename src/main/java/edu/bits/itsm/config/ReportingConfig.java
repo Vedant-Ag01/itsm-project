@@ -1,9 +1,10 @@
 package edu.bits.itsm.config;
 
+import edu.bits.itsm.persistence.PersistentSlaPolicy;
+import edu.bits.itsm.persistence.SlaPolicyTable;
 import edu.bits.itsm.reporting.ReportService;
 import edu.bits.itsm.search.IncidentSearchService;
 import edu.bits.itsm.sla.DefaultSlaCalculator;
-import edu.bits.itsm.sla.DefaultSlaPolicy;
 import edu.bits.itsm.sla.SlaCalculator;
 import edu.bits.itsm.sla.SlaPolicy;
 import org.springframework.context.annotation.Bean;
@@ -13,9 +14,10 @@ import org.springframework.context.annotation.Configuration;
 @Configuration
 public class ReportingConfig {
 
+    // The SLA targets now come from the database (admins can edit them)
     @Bean
-    public SlaPolicy slaPolicy() {
-        return new DefaultSlaPolicy();
+    public PersistentSlaPolicy slaPolicy(SlaPolicyTable table) {
+        return new PersistentSlaPolicy(table);
     }
 
     @Bean

@@ -7,6 +7,7 @@ import edu.bits.itsm.domain.IncidentNotFoundException;
 import edu.bits.itsm.domain.InvalidIncidentException;
 import edu.bits.itsm.domain.InvalidStateTransitionException;
 import edu.bits.itsm.domain.ServiceNotFoundException;
+import edu.bits.itsm.domain.SlaConfigurationMissingException;
 import edu.bits.itsm.domain.TechnicianUnavailableException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -51,6 +52,12 @@ public class ApiExceptionHandler {
     // Nobody free to take the incident -> 409
     @ExceptionHandler(TechnicianUnavailableException.class)
     public ResponseEntity<ErrorResponse> noTechnician(TechnicianUnavailableException e) {
+        return reply(HttpStatus.CONFLICT, e.getMessage());
+    }
+
+    // No SLA target saved for a priority -> 409
+    @ExceptionHandler(SlaConfigurationMissingException.class)
+    public ResponseEntity<ErrorResponse> missingSla(SlaConfigurationMissingException e) {
         return reply(HttpStatus.CONFLICT, e.getMessage());
     }
 
