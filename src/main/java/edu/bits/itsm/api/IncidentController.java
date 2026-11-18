@@ -17,9 +17,12 @@ import edu.bits.itsm.domain.ItService;
 import edu.bits.itsm.domain.Priority;
 import edu.bits.itsm.domain.Technician;
 import edu.bits.itsm.duplicate.DuplicateMatch;
+import edu.bits.itsm.search.IncidentSearchCriteria;
+import edu.bits.itsm.search.IncidentSearchService;
 import edu.bits.itsm.service.CreationResult;
-import edu.bits.itsm.service.IncidentFilter;
 import edu.bits.itsm.service.IncidentService;
+import edu.bits.itsm.sla.SlaCalculator;
+import edu.bits.itsm.sla.SlaStatus;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -31,6 +34,7 @@ import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestController;
 
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.time.format.DateTimeParseException;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -41,10 +45,16 @@ import java.util.List;
 public class IncidentController {
 
     private final IncidentService incidentService;
+    private final IncidentSearchService searchService;
+    private final SlaCalculator slaCalculator;
 
-    // Spring sees this constructor and hands in the IncidentService bean from AppConfig
-    public IncidentController(IncidentService incidentService) {
+    // Spring sees this constructor and hands in the beans from the config classes
+    public IncidentController(IncidentService incidentService,
+                              IncidentSearchService searchService,
+                              SlaCalculator slaCalculator) {
         this.incidentService = incidentService;
+        this.searchService = searchService;
+        this.slaCalculator = slaCalculator;
     }
 
     // ---------- creating and reading ----------
@@ -76,33 +86,42 @@ public class IncidentController {
                 IncidentResponse.from(result.incident()), duplicateIds);
     }
 
-    // All filters are optional. Example: /api/incidents?status=RESOLVED&q=vpn
+    // All filters are optional. Example: /api/incidents?status=RESOLVED&q=vpn&slaStatus=BREACHED
     @GetMapping
     public List<IncidentResponse> list(
             @RequestParam(required = false) String status,
             @RequestParam(required = false) String priority,
             @RequestParam(required = false) String category,
             @RequestParam(required = false) String technicianId,
+            @RequestParam(required = false) String service,
+            @RequestParam(required = false) String slaStatus,
             @RequestParam(required = false) String q,
             @RequestParam(required = false) String from,
             @RequestParam(required = false) String to) {
 
         UserAccount user = CurrentUser.get();
-        IncidentFilter filter = new IncidentFilter(
-                parseEnum(IncidentStatus.class, status, "status"),
-                parseEnum(Priority.class, priority, "priority"),
-                parseEnum(IncidentCategory.class, category, "category"),
-                technicianId,
-                q,
-                parseDate(from, "from"),
-                parseDate(to, "to"));
 
-        List<Incident> found = new ArrayList<>();
+        IncidentSearchCriteria criteria = new IncidentSearchCriteria.Builder()
+                .status(enumName(IncidentStatus.class, status, "status"))
+                .priority(enumName(Priority.class, priority, "priority"))
+                .category(enumName(IncidentCategory.class, category, "category"))
+                .slaStatus(enumName(SlaStatus.class, slaStatus, "slaStatus"))
+                .technicianId(technicianId)
+                .service(service)
+                .query(q)
+                .fromDate(parseDate(from, "from"))
+                .toDate(parseDate(to, "to"))
+                .build();
+
+        // first keep only what this user may see, then let the search service filter
+        List<Incident> visible = new ArrayList<>();
         for (Incident incident : incidentService.getAllIncidents()) {
-            if (canSee(user, incident) && filter.matches(incident)) {
-                found.add(incident);
+            if (IncidentAccess.canSee(user, incident)) {
+                visible.add(incident);
             }
         }
+        List<Incident> found = new ArrayList<>(
+                searchService.search(visible, criteria, this::slaStatusOf));
 
         // newest first
         found.sort((a, b) -> b.getCreatedAt().compareTo(a.getCreatedAt()));
@@ -117,9 +136,7 @@ public class IncidentController {
     @GetMapping("/{id}")
     public IncidentResponse getOne(@PathVariable String id) {
         Incident incident = incidentService.getIncident(id);
-        if (!canSee(CurrentUser.get(), incident)) {
-            throw new ForbiddenException("You are not allowed to see this incident");
-        }
+        IncidentAccess.requireCanSee(CurrentUser.get(), incident);
         return IncidentResponse.from(incident);
     }
 
@@ -182,18 +199,7 @@ public class IncidentController {
         return IncidentResponse.from(incidentService.getIncident(id));
     }
 
-    // ---------- who may see what ----------
-
-    private boolean canSee(UserAccount user, Incident incident) {
-        if (user.role == Role.ADMIN) {
-            return true;
-        }
-        if (user.role == Role.EMPLOYEE) {
-            return incident.getReporter().getId().equals(user.id);
-        }
-        Technician assigned = incident.getAssignedTechnician();
-        return assigned != null && assigned.getId().equals(user.id);
-    }
+    // ---------- helpers ----------
 
     private void requireAssignedTechnicianOrAdmin(UserAccount user, Incident incident) {
         if (user.role == Role.ADMIN) {
@@ -205,15 +211,25 @@ public class IncidentController {
         }
     }
 
-    // ---------- turning the text in the URL into real values ----------
+    // "ON_TRACK", "AT_RISK" or "BREACHED" right now (null if it can't be judged)
+    private String slaStatusOf(Incident incident) {
+        try {
+            return slaCalculator.evaluate(incident.getCreatedAt(), incident.getPriority(),
+                    incident.getAcknowledgedAt(), incident.getResolvedAt(),
+                    LocalDateTime.now()).name();
+        } catch (RuntimeException e) {
+            return null;
+        }
+    }
 
     // "resolved" or "RESOLVED" both work. An empty value means "no filter".
-    private <E extends Enum<E>> E parseEnum(Class<E> type, String value, String fieldName) {
+    // Returns the proper name, or throws a clear error for an unknown value.
+    private <E extends Enum<E>> String enumName(Class<E> type, String value, String fieldName) {
         if (value == null || value.isBlank()) {
             return null;
         }
         try {
-            return Enum.valueOf(type, value.trim().toUpperCase());
+            return Enum.valueOf(type, value.trim().toUpperCase()).name();
         } catch (IllegalArgumentException e) {
             throw new IllegalArgumentException("Unknown " + fieldName + " '" + value
                     + "'. Allowed: " + Arrays.toString(type.getEnumConstants()));

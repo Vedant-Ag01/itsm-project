@@ -117,6 +117,10 @@ public class IncidentService {
         this.assignmentStrategy = newStrategy;
     }
 
+    public String getAssignmentStrategyName() {
+        return assignmentStrategy.getName();
+    }
+
     // ---------- the rest of the lifecycle ----------
 
     public Incident acknowledge(String incidentId, String actor) {

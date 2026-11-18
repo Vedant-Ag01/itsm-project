@@ -5,6 +5,9 @@ import edu.bits.itsm.api.dto.AvailabilityRequest;
 import edu.bits.itsm.api.dto.IncidentResponse;
 import edu.bits.itsm.api.dto.TechnicianResponse;
 import edu.bits.itsm.api.dto.UserResponse;
+import edu.bits.itsm.assignment.AssignmentStrategy;
+import edu.bits.itsm.assignment.LoadBasedStrategy;
+import edu.bits.itsm.assignment.SkillBasedStrategy;
 import edu.bits.itsm.auth.AllowedRoles;
 import edu.bits.itsm.auth.CurrentUser;
 import edu.bits.itsm.auth.Role;
@@ -24,16 +27,23 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 import java.util.ArrayList;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 
-// Admin-only tools: people, technician availability and manual assignment
+// Admin-only tools: people, technician availability, manual assignment, assignment rule
 @RestController
 @RequestMapping("/api")
 public class AdminController {
 
+    public record StrategyRequest(String name) { }
+
     private final IncidentService incidentService;
     private final List<Technician> technicians;
     private final UserAccountTable users;
+
+    // the assignment rules an admin can choose from
+    private final Map<String, AssignmentStrategy> strategies = new LinkedHashMap<>();
 
     public AdminController(IncidentService incidentService,
                            List<Technician> technicians,
@@ -41,6 +51,11 @@ public class AdminController {
         this.incidentService = incidentService;
         this.technicians = technicians;
         this.users = users;
+
+        AssignmentStrategy skillBased = new SkillBasedStrategy();
+        AssignmentStrategy loadBased = new LoadBasedStrategy();
+        strategies.put(skillBased.getName(), skillBased);
+        strategies.put(loadBased.getName(), loadBased);
     }
 
     @GetMapping("/admin/users")
@@ -84,6 +99,31 @@ public class AdminController {
         incidentService.assignTo(id, technician, admin.name);
         return IncidentResponse.from(incidentService.getIncident(id));
     }
+
+    // ---------- which rule auto-assign uses ----------
+
+    @GetMapping("/admin/assignment-strategy")
+    @AllowedRoles({Role.ADMIN})
+    public Map<String, Object> currentStrategy() {
+        Map<String, Object> result = new LinkedHashMap<>();
+        result.put("current", incidentService.getAssignmentStrategyName());
+        result.put("available", new ArrayList<>(strategies.keySet()));
+        return result;
+    }
+
+    @PutMapping("/admin/assignment-strategy")
+    @AllowedRoles({Role.ADMIN})
+    public Map<String, Object> changeStrategy(@RequestBody StrategyRequest request) {
+        AssignmentStrategy chosen = request.name() == null ? null : strategies.get(request.name());
+        if (chosen == null) {
+            throw new IllegalArgumentException("Unknown strategy '" + request.name()
+                    + "'. Allowed: " + strategies.keySet());
+        }
+        incidentService.changeAssignmentStrategy(chosen);
+        return currentStrategy();
+    }
+
+    // ---------- helpers ----------
 
     private Technician findTechnician(String id) {
         for (Technician technician : technicians) {
