@@ -1,4 +1,5 @@
 package edu.bits.itsm.duplicate;
+import edu.bits.itsm.domain.IncidentStatus;
 
 import edu.bits.itsm.domain.Incident;
 
@@ -35,7 +36,7 @@ public class SimilarityDuplicateDetector implements DuplicateDetector {
 
         for (Incident candidate : existing) {
             // Ignore closed incidents or comparing incident against itself
-            if ("CLOSED".equalsIgnoreCase(candidate.getStatus()) || candidate.getId().equals(incoming.getId())) {
+            if (candidate.getStatus() == IncidentStatus.CLOSED || candidate.getId().equals(incoming.getId())) {
                 continue;
             }
 
