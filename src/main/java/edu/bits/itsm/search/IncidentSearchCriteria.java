@@ -1,11 +1,12 @@
 package edu.bits.itsm.search;
 
-import java.time.LocalDateTime;
+import java.time.LocalDate;
 
 public class IncidentSearchCriteria {
     private final String incidentId;
-    private final LocalDateTime fromDate;
-    private final LocalDateTime toDate;
+    private final String query; // Free-text search across id, title, or description (?q=)
+    private final LocalDate fromDate;
+    private final LocalDate toDate;
     private final String status;
     private final String priority;
     private final String category;
@@ -13,8 +14,9 @@ public class IncidentSearchCriteria {
     private final String technicianId;
     private final String slaStatus;
 
-    public IncidentSearchCriteria(Builder builder) {
+    private IncidentSearchCriteria(Builder builder) {
         this.incidentId = builder.incidentId;
+        this.query = builder.query;
         this.fromDate = builder.fromDate;
         this.toDate = builder.toDate;
         this.status = builder.status;
@@ -26,8 +28,9 @@ public class IncidentSearchCriteria {
     }
 
     public String getIncidentId() { return incidentId; }
-    public LocalDateTime getFromDate() { return fromDate; }
-    public LocalDateTime getToDate() { return toDate; }
+    public String getQuery() { return query; }
+    public LocalDate getFromDate() { return fromDate; }
+    public LocalDate getToDate() { return toDate; }
     public String getStatus() { return status; }
     public String getPriority() { return priority; }
     public String getCategory() { return category; }
@@ -37,8 +40,9 @@ public class IncidentSearchCriteria {
 
     public static class Builder {
         private String incidentId;
-        private LocalDateTime fromDate;
-        private LocalDateTime toDate;
+        private String query;
+        private LocalDate fromDate;
+        private LocalDate toDate;
         private String status;
         private String priority;
         private String category;
@@ -47,8 +51,9 @@ public class IncidentSearchCriteria {
         private String slaStatus;
 
         public Builder incidentId(String incidentId) { this.incidentId = incidentId; return this; }
-        public Builder fromDate(LocalDateTime fromDate) { this.fromDate = fromDate; return this; }
-        public Builder toDate(LocalDateTime toDate) { this.toDate = toDate; return this; }
+        public Builder query(String query) { this.query = query; return this; }
+        public Builder fromDate(LocalDate fromDate) { this.fromDate = fromDate; return this; }
+        public Builder toDate(LocalDate toDate) { this.toDate = toDate; return this; }
         public Builder status(String status) { this.status = status; return this; }
         public Builder priority(String priority) { this.priority = priority; return this; }
         public Builder category(String category) { this.category = category; return this; }
