@@ -3,18 +3,20 @@ package edu.bits.itsm.config;
 import edu.bits.itsm.assignment.SkillBasedStrategy;
 import edu.bits.itsm.audit.AuditLogObserver;
 import edu.bits.itsm.audit.AuditRepository;
-import edu.bits.itsm.audit.InMemoryAuditRepository;
 import edu.bits.itsm.domain.IncidentCategory;
 import edu.bits.itsm.domain.Technician;
 import edu.bits.itsm.duplicate.SimilarityDuplicateDetector;
 import edu.bits.itsm.event.IncidentEventPublisher;
 import edu.bits.itsm.event.IncidentObserver;
-import edu.bits.itsm.notification.InAppChannel;
 import edu.bits.itsm.notification.NotificationObserver;
 import edu.bits.itsm.notification.SimulatedEmailChannel;
+import edu.bits.itsm.persistence.AuditTable;
 import edu.bits.itsm.persistence.IncidentMapper;
 import edu.bits.itsm.persistence.IncidentTable;
+import edu.bits.itsm.persistence.JpaAuditRepository;
 import edu.bits.itsm.persistence.JpaIncidentRepository;
+import edu.bits.itsm.persistence.NotificationTable;
+import edu.bits.itsm.persistence.PersistentInAppChannel;
 import edu.bits.itsm.priority.WeightedPriorityStrategy;
 import edu.bits.itsm.repository.IncidentRepository;
 import edu.bits.itsm.service.IncidentFactory;
@@ -63,16 +65,16 @@ public class AppConfig {
         return new JpaIncidentRepository(jpa, mapper);
     }
 
-    // ---------- C's audit and notification pieces ----------
+    // ---------- audit and notifications, now saved in PostgreSQL ----------
 
     @Bean
-    public AuditRepository auditRepository() {
-        return new InMemoryAuditRepository();
+    public AuditRepository auditRepository(AuditTable table) {
+        return new JpaAuditRepository(table);
     }
 
     @Bean
-    public InAppChannel inAppChannel() {
-        return new InAppChannel();
+    public PersistentInAppChannel inAppChannel(NotificationTable table) {
+        return new PersistentInAppChannel(table);
     }
 
     @Bean
@@ -82,7 +84,7 @@ public class AppConfig {
 
     @Bean
     public IncidentEventPublisher incidentEventPublisher(AuditRepository auditRepository,
-                                                         InAppChannel inAppChannel,
+                                                         PersistentInAppChannel inAppChannel,
                                                          SimulatedEmailChannel emailChannel,
                                                          IncidentRepository repository) {
         IncidentEventPublisher publisher = new IncidentEventPublisher();

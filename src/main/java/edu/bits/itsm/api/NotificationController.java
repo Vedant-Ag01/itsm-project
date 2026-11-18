@@ -1,6 +1,8 @@
 package edu.bits.itsm.api;
+
 import edu.bits.itsm.auth.CurrentUser;
 import edu.bits.itsm.notification.InAppChannel;
+import edu.bits.itsm.persistence.PersistentInAppChannel;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -10,15 +12,15 @@ import org.springframework.web.bind.annotation.RestController;
 import java.util.List;
 import java.util.Map;
 
-// A user's own notifications. The owner is always the logged-in user
+// A user's own notifications. The owner is always the logged-in user (by email),
 // so nobody can read or change someone else's.
 @RestController
 @RequestMapping("/api/notifications")
 public class NotificationController {
 
-    private final InAppChannel inAppChannel;
+    private final PersistentInAppChannel inAppChannel;
 
-    public NotificationController(InAppChannel inAppChannel) {
+    public NotificationController(PersistentInAppChannel inAppChannel) {
         this.inAppChannel = inAppChannel;
     }
 
