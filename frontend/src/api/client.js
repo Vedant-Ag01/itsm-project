@@ -52,6 +52,10 @@ export async function apiRequest(
     )
   }
 
+  if (response.status === 401 && path !== '/auth/login') {
+    window.dispatchEvent(new Event('itsm-session-expired'))
+  }
+
   const text = await response.text()
   let data = null
 
@@ -70,7 +74,7 @@ export async function apiRequest(
 
   if (!response.ok) {
     throw new ApiError(
-      data?.error || `Request failed (${response.status}).`,
+      data?.message || data?.error || `Request failed (${response.status}).`,
       response.status,
     )
   }

@@ -1,8 +1,10 @@
+import { useSession } from '../auth/session'
 import { NavLink } from 'react-router'
 import { pageUrl, workspaces } from '../layouts/workspaces'
 
 export default function Sidebar({ role }) {
   const workspace = workspaces[role]
+  const { user } = useSession()
 
   return (
     <aside className="sidebar">
@@ -33,9 +35,9 @@ export default function Sidebar({ role }) {
       </div>
 
       <div className="profile">
-        <span className="avatar" aria-hidden="true">P</span>
+        <span className="avatar" aria-hidden="true">{user?.name?.[0] ?? "?"}</span>
         <div>
-          <strong>Layout preview</strong>
+          <strong>{user?.name}</strong>
           <span className="profile-role">{workspace.label}</span>
         </div>
       </div>

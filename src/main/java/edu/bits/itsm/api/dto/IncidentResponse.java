@@ -12,10 +12,19 @@ public record IncidentResponse(
         String priority,
         String category,
         String serviceName,
+        String impact,
+        String urgency,
         String reporterName,
         String assignedTechnician,
         int affectedUsers,
-        LocalDateTime createdAt) {
+        LocalDateTime createdAt,
+        LocalDateTime acknowledgedAt,
+        LocalDateTime resolvedAt,
+        LocalDateTime closedAt,
+        String resolutionNote,
+        String closureNote,
+        Integer feedbackRating,
+        String feedbackComment) {
 
     // Turns a domain Incident into the shape we send out
     public static IncidentResponse from(Incident incident) {
@@ -34,6 +43,13 @@ public record IncidentResponse(
             technician = incident.getAssignedTechnician().getName();
         }
 
+        Integer rating = null;
+        String ratingComment = null;
+        if (incident.getFeedback() != null) {
+            rating = incident.getFeedback().getRating();
+            ratingComment = incident.getFeedback().getComment();
+        }
+
         return new IncidentResponse(
                 incident.getId(),
                 incident.getTitle(),
@@ -42,9 +58,18 @@ public record IncidentResponse(
                 priority,
                 category,
                 incident.getService().getName(),
+                incident.getImpact().name(),
+                incident.getUrgency().name(),
                 incident.getReporter().getName(),
                 technician,
                 incident.getAffectedUsers(),
-                incident.getCreatedAt());
+                incident.getCreatedAt(),
+                incident.getAcknowledgedAt(),
+                incident.getResolvedAt(),
+                incident.getClosedAt(),
+                incident.getResolutionNote(),
+                incident.getClosureNote(),
+                rating,
+                ratingComment);
     }
 }
