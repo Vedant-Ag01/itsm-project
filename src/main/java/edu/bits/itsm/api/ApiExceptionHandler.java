@@ -6,6 +6,7 @@ import edu.bits.itsm.auth.ForbiddenException;
 import edu.bits.itsm.domain.IncidentNotFoundException;
 import edu.bits.itsm.domain.InvalidIncidentException;
 import edu.bits.itsm.domain.InvalidStateTransitionException;
+import edu.bits.itsm.domain.ServiceNotFoundException;
 import edu.bits.itsm.domain.TechnicianUnavailableException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -33,6 +34,12 @@ public class ApiExceptionHandler {
     @ExceptionHandler(IncidentNotFoundException.class)
     public ResponseEntity<ErrorResponse> notFound(IncidentNotFoundException e) {
         return reply(HttpStatus.NOT_FOUND, e.getMessage());
+    }
+
+    // The service named in a report is not in the catalogue (or is switched off) -> 400
+    @ExceptionHandler(ServiceNotFoundException.class)
+    public ResponseEntity<ErrorResponse> noSuchService(ServiceNotFoundException e) {
+        return reply(HttpStatus.BAD_REQUEST, e.getMessage());
     }
 
     // Illegal lifecycle move, like closing a NEW incident -> 409

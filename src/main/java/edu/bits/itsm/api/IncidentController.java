@@ -15,12 +15,14 @@ import edu.bits.itsm.domain.IncidentCategory;
 import edu.bits.itsm.domain.IncidentStatus;
 import edu.bits.itsm.domain.ItService;
 import edu.bits.itsm.domain.Priority;
+import edu.bits.itsm.domain.ServiceInfo;
 import edu.bits.itsm.domain.Technician;
 import edu.bits.itsm.duplicate.DuplicateMatch;
 import edu.bits.itsm.search.IncidentSearchCriteria;
 import edu.bits.itsm.search.IncidentSearchService;
 import edu.bits.itsm.service.CreationResult;
 import edu.bits.itsm.service.IncidentService;
+import edu.bits.itsm.service.ServiceCatalog;
 import edu.bits.itsm.sla.SlaCalculator;
 import edu.bits.itsm.sla.SlaStatus;
 import org.springframework.http.HttpStatus;
@@ -47,14 +49,17 @@ public class IncidentController {
     private final IncidentService incidentService;
     private final IncidentSearchService searchService;
     private final SlaCalculator slaCalculator;
+    private final ServiceCatalog serviceCatalog;
 
     // Spring sees this constructor and hands in the beans from the config classes
     public IncidentController(IncidentService incidentService,
                               IncidentSearchService searchService,
-                              SlaCalculator slaCalculator) {
+                              SlaCalculator slaCalculator,
+                              ServiceCatalog serviceCatalog) {
         this.incidentService = incidentService;
         this.searchService = searchService;
         this.slaCalculator = slaCalculator;
+        this.serviceCatalog = serviceCatalog;
     }
 
     // ---------- creating and reading ----------
@@ -65,7 +70,11 @@ public class IncidentController {
     public CreateIncidentResponse create(@RequestBody CreateIncidentRequest request) {
         UserAccount user = CurrentUser.get();
         Employee reporter = new Employee(user.id, user.name, user.email, user.department);
-        ItService service = new ItService(request.serviceName(), request.criticality());
+
+        // The service must be in the catalogue, and its criticality comes from there,
+        // not from the form, so the reporter cannot under-rate a critical service.
+        ServiceInfo catalogued = serviceCatalog.requireActive(request.serviceName());
+        ItService service = new ItService(catalogued.name(), catalogued.criticality());
 
         CreationResult result = incidentService.createIncident(
                 reporter,
