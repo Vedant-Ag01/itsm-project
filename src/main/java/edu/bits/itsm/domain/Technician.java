@@ -37,4 +37,10 @@ public class Technician extends User {
     public void setAvailable(boolean available) {
         this.available = available;
     }
+
+    // Reports group technicians by this text, so it shows the name
+    @Override
+    public String toString() {
+        return getName();
+    }
 }
