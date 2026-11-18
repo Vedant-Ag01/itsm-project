@@ -34,7 +34,7 @@ export default function WorkspaceLayout({ role, theme, onToggle }) {
 
       <div className="workspace">
         <header className="topbar">
-          <div className="breadcrumb">
+          <div className="breadcrumb" style={normalizedPath === `/${role}` ? { visibility: 'hidden' } : undefined}>
             <span>{workspace.label}</span>
             <span aria-hidden="true">/</span>
             <strong>{title}</strong>

@@ -10,6 +10,7 @@ import IncidentDetails from './pages/employee/IncidentDetails'
 import PlaceholderPage from './pages/PlaceholderPage'
 import NotFound from './pages/NotFound'
 import './App.css'
+import './design-polish.css'
 import ReportIncident from './pages/employee/ReportIncident'
 import SessionGate from './auth/SessionGate'
 import Login from './pages/Login'
@@ -19,31 +20,37 @@ import { USING_MOCKS } from './api/incidents'
 function getInitialTheme() {
   try {
     const saved = localStorage.getItem('itsm-theme')
-    if (saved === 'light' || saved === 'dark') return saved
+    if (['light', 'soft', 'dim', 'dark', 'midnight', 'system'].includes(saved)) return saved
   } catch {
     // Fall back to the system preference.
   }
 
-  return window.matchMedia('(prefers-color-scheme: dark)').matches
-    ? 'dark'
-    : 'light'
+  return 'system'
 }
 
 export default function App() {
   const [theme, setTheme] = useState(getInitialTheme)
 
   useEffect(() => {
-    document.documentElement.dataset.theme = theme
+    const media = window.matchMedia('(prefers-color-scheme: dark)')
+    function apply() {
+      const selected = theme === 'system' ? (media.matches ? 'dark' : 'light') : theme
+      document.documentElement.dataset.theme = ['dim', 'midnight'].includes(selected) ? 'dark' : selected === 'soft' ? 'light' : selected
+      document.documentElement.dataset.palette = selected
+    }
+    apply()
+    media.addEventListener('change', apply)
 
     try {
       localStorage.setItem('itsm-theme', theme)
     } catch {
       // Theme switching still works without storage.
     }
+    return () => media.removeEventListener('change', apply)
   }, [theme])
 
-  function toggleTheme() {
-    setTheme((current) => current === 'dark' ? 'light' : 'dark')
+  function toggleTheme(value) {
+    setTheme(value)
   }
 
   return (
