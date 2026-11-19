@@ -33,7 +33,7 @@ priority = P1..P4. SLA status = ON_TRACK, AT_RISK, BREACHED.
 ## Incidents
 | Method | Path | Who | Notes |
 |---|---|---|---|
-| POST | /incidents | EMPLOYEE, ADMIN | body `{title, description, serviceName, criticality, impact, urgency, affectedUsers, category}`. Returns `{incident, possibleDuplicateIds}`. The reporter is the logged-in user. |
+| POST | /incidents | EMPLOYEE, ADMIN | body `{title, description, serviceName, criticality, impact, urgency, affectedUsers, category}`. `category` is optional: if left out it is worked out from the title and description (400 if nothing matches). Returns `{incident, possibleDuplicateIds}`. The reporter is the logged-in user. |
 | GET | /incidents | any | only incidents the user may see. Optional filters: `status, priority, category, technicianId, service, slaStatus, q, from, to` (dates like 2026-11-10). Newest first. |
 | GET | /incidents/{id} | who may see it | |
 | PUT | /incidents/{id} | reporting EMPLOYEE, ADMIN | body any of `{title, description, impact, urgency, affectedUsers}` (omitted = unchanged). Priority is recalculated; audit gets INCIDENT_UPDATED and, if it changed, PRIORITY_CHANGED. Not allowed once RESOLVED/VERIFIED/CLOSED (409). Limits: title 200 chars, description 2000, affectedUsers 1 to 100000. |
@@ -50,12 +50,18 @@ priority = P1..P4. SLA status = ON_TRACK, AT_RISK, BREACHED.
 | POST | /incidents/{id}/feedback | reporting EMPLOYEE, ADMIN | body `{rating 1-5, comment}` |
 | GET | /incidents/{id}/audit | who may see it | history, oldest first |
 | GET | /incidents/{id}/sla | who may see it | `{incidentId, priority, responseDeadline, resolutionDeadline, status}` |
+| GET | /incidents/{id}/sla-risk | who may see it | predicted risk of missing the SLA: `{incidentId, title, priority, status, technician, level (LOW/MEDIUM/HIGH), score 0-100, reason}` |
 
 ## Services and SLA targets
 | Method | Path | Who | Notes |
 |---|---|---|---|
 | GET | /services | any | active services for the "report an incident" dropdown: `[{id, name, description, criticality, active}]` |
 | GET | /sla-policies | any | `[{priority, responseMinutes, resolutionMinutes}]` for P1 to P4 |
+
+## Category suggestion
+| Method | Path | Who | Notes |
+|---|---|---|---|
+| POST | /classification/suggest | any | body `{title, description}` returns `{category, confidence, matchedKeywords}`; `category` is null when nothing matches. Use it to pre-fill the category on the report form. |
 
 ## Technician
 | Method | Path | Notes |
@@ -88,9 +94,13 @@ priority = P1..P4. SLA status = ON_TRACK, AT_RISK, BREACHED.
 | GET | /admin/reports/workload | `[{technicianId (the name), activeIncidentCount}]` |
 | GET | /admin/reports/categories | `[{category, count}]` |
 | GET | /admin/reports/resolution-time | `{averageResolutionMinutes}` |
+| GET | /admin/sla-risks | open incidents ranked by predicted SLA risk, riskiest first. Optional `?minLevel=MEDIUM` or `HIGH`. Same fields as `/incidents/{id}/sla-risk`. |
 | GET | /admin/reports/services | `[{serviceName, criticality, totalIncidents, openIncidents, resolvedIncidents, p1Incidents, slaBreaches, averageResolutionMinutes, mostCommonCategory}]` busiest service first |
 | POST | /admin/monitor/run | runs the SLA and escalation check now; returns `{slaWarnings, slaBreaches, escalations}` |
 
 An audit record: `{incidentId, eventType, actor, previousStatus, newStatus, description, timestamp, formattedLog}`.
 The SLA and escalation check also runs by itself every 30 seconds and writes SLA_WARNING, SLA_BREACHED
 and ESCALATED events into the audit trail and the notifications.
+
+Telegram: if the environment variables `TELEGRAM_BOT_TOKEN` and `TELEGRAM_CHAT_ID` are set when the backend starts,
+every notification is also posted to that Telegram chat (once per event). Without them Telegram is simply off.

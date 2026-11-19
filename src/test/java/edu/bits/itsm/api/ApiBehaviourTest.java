@@ -4,6 +4,7 @@ import edu.bits.itsm.assignment.AssignmentStrategy;
 import edu.bits.itsm.auth.AuthInterceptor;
 import edu.bits.itsm.auth.AuthService;
 import edu.bits.itsm.auth.PasswordHasher;
+import edu.bits.itsm.classification.KeywordCategoryClassifier;
 import edu.bits.itsm.auth.Role;
 import edu.bits.itsm.auth.UserAccount;
 import edu.bits.itsm.auth.UserAccountTable;
@@ -27,6 +28,7 @@ import edu.bits.itsm.service.IncidentService;
 import edu.bits.itsm.service.ServiceCatalog;
 import edu.bits.itsm.sla.DefaultSlaCalculator;
 import edu.bits.itsm.sla.DefaultSlaPolicy;
+import edu.bits.itsm.sla.HeuristicSlaRiskPredictor;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.http.MediaType;
@@ -218,11 +220,15 @@ class ApiBehaviourTest {
 
         IncidentController incidentController = new IncidentController(incidents,
                 new IncidentSearchService(), new DefaultSlaCalculator(new DefaultSlaPolicy()),
-                catalog);
+                catalog, new KeywordCategoryClassifier(KeywordCategoryClassifier.defaultRules()));
 
         mvc = MockMvcBuilders
                 .standaloneSetup(incidentController, new IncidentNoteController(incidents),
-                        new ServiceController(catalog), new WorkloadController(incidents, technicians))
+                        new ServiceController(catalog), new WorkloadController(incidents, technicians),
+                        new ClassificationController(
+                                new KeywordCategoryClassifier(KeywordCategoryClassifier.defaultRules())),
+                        new SlaRiskController(incidents, new HeuristicSlaRiskPredictor(
+                                new DefaultSlaCalculator(new DefaultSlaPolicy()))))
                 .addInterceptors(new AuthInterceptor(auth))
                 .setControllerAdvice(new ApiExceptionHandler())
                 .build();
@@ -474,5 +480,72 @@ class ApiBehaviourTest {
     void aWorkloadLimitBelowOneGives400() throws Exception {
         assertEquals(400, code(as(json(put("/api/admin/workload-limit"),
                 "{\"maxActiveIncidents\":0}"), admin)));
+    }
+
+    // ---------- automatic category ----------
+
+    @Test
+    void aMissingCategoryIsWorkedOutFromTheText() throws Exception {
+        String body = INCIDENT_JSON.replace(",\"category\":\"NETWORK\"", "");
+        String response = mvc.perform(as(json(post("/api/incidents"), body), asha))
+                .andExpect(status().isCreated()).andReturn().getResponse().getContentAsString();
+        assertTrue(response.contains("\"category\":\"NETWORK\""));
+    }
+
+    @Test
+    void aMissingCategoryWithNoClueInTheTextGives400() throws Exception {
+        String body = INCIDENT_JSON.replace(",\"category\":\"NETWORK\"", "")
+                .replace("WiFi down in library", "zzz qqq")
+                .replace("No WiFi on the second floor", "xxx yyy");
+        assertEquals(400, code(as(json(post("/api/incidents"), body), asha)));
+    }
+
+    @Test
+    void theSuggestEndpointNamesACategory() throws Exception {
+        String response = mvc.perform(as(json(post("/api/classification/suggest"),
+                "{\"title\":\"VPN will not connect\",\"description\":\"Cannot reach internal systems\"}"), asha))
+                .andExpect(status().isOk()).andReturn().getResponse().getContentAsString();
+        assertTrue(response.contains("NETWORK"));
+    }
+
+    @Test
+    void theSuggestEndpointNeedsALogin() throws Exception {
+        assertEquals(401, code(json(post("/api/classification/suggest"),
+                "{\"title\":\"VPN\",\"description\":\"x\"}")));
+    }
+
+    // ---------- SLA risk ----------
+
+    @Test
+    void theReporterCanSeeTheSlaRiskOfTheirIncident() throws Exception {
+        String id = reportIncident();
+        String body = mvc.perform(as(get("/api/incidents/" + id + "/sla-risk"), asha))
+                .andExpect(status().isOk()).andReturn().getResponse().getContentAsString();
+        assertTrue(body.contains("\"level\""));
+        assertTrue(body.contains("\"reason\""));
+    }
+
+    @Test
+    void anotherEmployeeCannotSeeTheSlaRiskOfSomeoneElsesIncident() throws Exception {
+        String id = reportIncident();
+        assertEquals(403, code(as(get("/api/incidents/" + id + "/sla-risk"), nikhil)));
+    }
+
+    @Test
+    void theAdminSeesAListOfOpenIncidentsWithRisk() throws Exception {
+        String id = reportIncident();
+        String body = mvc.perform(as(get("/api/admin/sla-risks"), admin))
+                .andExpect(status().isOk()).andReturn().getResponse().getContentAsString();
+        assertTrue(body.contains(id));
+    }
+
+    @Test
+    void anEmployeeCannotUseTheAdminRiskList() throws Exception {
+        assertEquals(403, code(as(get("/api/admin/sla-risks"), asha)));
+    }
+
+    @Test
+    void anUnknownMinLevelGives400() throws Exception {
+        assertEquals(400, code(as(get("/api/admin/sla-risks?minLevel=EXTREME"), admin)));
     }
 }

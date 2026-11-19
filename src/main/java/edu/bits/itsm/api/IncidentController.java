@@ -6,6 +6,8 @@ import edu.bits.itsm.api.dto.IncidentResponse;
 import edu.bits.itsm.api.dto.NoteActionRequest;
 import edu.bits.itsm.api.dto.UpdateIncidentRequest;
 import edu.bits.itsm.auth.AllowedRoles;
+import edu.bits.itsm.classification.CategoryClassifier;
+import edu.bits.itsm.classification.CategorySuggestion;
 import edu.bits.itsm.auth.CurrentUser;
 import edu.bits.itsm.auth.ForbiddenException;
 import edu.bits.itsm.auth.Role;
@@ -52,16 +54,19 @@ public class IncidentController {
     private final IncidentSearchService searchService;
     private final SlaCalculator slaCalculator;
     private final ServiceCatalog serviceCatalog;
+    private final CategoryClassifier classifier;
 
     // Spring sees this constructor and hands in the beans from the config classes
     public IncidentController(IncidentService incidentService,
                               IncidentSearchService searchService,
                               SlaCalculator slaCalculator,
-                              ServiceCatalog serviceCatalog) {
+                              ServiceCatalog serviceCatalog,
+                              CategoryClassifier classifier) {
         this.incidentService = incidentService;
         this.searchService = searchService;
         this.slaCalculator = slaCalculator;
         this.serviceCatalog = serviceCatalog;
+        this.classifier = classifier;
     }
 
     // ---------- creating and reading ----------
@@ -78,6 +83,16 @@ public class IncidentController {
         ServiceInfo catalogued = serviceCatalog.requireActive(request.serviceName());
         ItService service = new ItService(catalogued.name(), catalogued.criticality());
 
+        // If the form did not choose a category, work one out from the title and description
+        IncidentCategory category = request.category();
+        if (category == null) {
+            category = classifier.suggest(request.title(), request.description())
+                    .map(CategorySuggestion::category)
+                    .orElseThrow(() -> new IllegalArgumentException(
+                            "No category was given and none could be worked out from the text. "
+                                    + "Please choose a category."));
+        }
+
         CreationResult result = incidentService.createIncident(
                 reporter,
                 request.title(),
@@ -86,7 +101,7 @@ public class IncidentController {
                 request.impact(),
                 request.urgency(),
                 request.affectedUsers(),
-                request.category());
+                category);
 
         List<String> duplicateIds = new ArrayList<>();
         for (DuplicateMatch match : result.possibleDuplicates()) {

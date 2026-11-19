@@ -8,8 +8,10 @@ import edu.bits.itsm.domain.Technician;
 import edu.bits.itsm.duplicate.SimilarityDuplicateDetector;
 import edu.bits.itsm.event.IncidentEventPublisher;
 import edu.bits.itsm.event.IncidentObserver;
+import edu.bits.itsm.notification.DeduplicatingChannel;
 import edu.bits.itsm.notification.NotificationObserver;
 import edu.bits.itsm.notification.SimulatedEmailChannel;
+import edu.bits.itsm.notification.TelegramChannel;
 import edu.bits.itsm.persistence.AuditTable;
 import edu.bits.itsm.persistence.IncidentMapper;
 import edu.bits.itsm.persistence.IncidentTable;
@@ -22,6 +24,7 @@ import edu.bits.itsm.repository.IncidentRepository;
 import edu.bits.itsm.service.IncidentFactory;
 import edu.bits.itsm.service.IncidentRecipientResolver;
 import edu.bits.itsm.service.IncidentService;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
@@ -86,7 +89,9 @@ public class AppConfig {
     public IncidentEventPublisher incidentEventPublisher(AuditRepository auditRepository,
                                                          PersistentInAppChannel inAppChannel,
                                                          SimulatedEmailChannel emailChannel,
-                                                         IncidentRepository repository) {
+                                                         IncidentRepository repository,
+                                                         @Value("${TELEGRAM_BOT_TOKEN:}") String telegramToken,
+                                                         @Value("${TELEGRAM_CHAT_ID:}") String telegramChatId) {
         IncidentEventPublisher publisher = new IncidentEventPublisher();
 
         publisher.subscribe(new AuditLogObserver(auditRepository));
@@ -95,6 +100,21 @@ public class AppConfig {
                 new IncidentRecipientResolver(repository, List.of("admin@bits.edu")));
         notifications.addChannel(inAppChannel);
         notifications.addChannel(emailChannel);
+
+        // Telegram is optional: it is switched on only when both environment variables are set.
+        // The wrapper makes sure one event is posted once, not once per recipient.
+        if (!telegramToken.isBlank() && !telegramChatId.isBlank()) {
+            try {
+                notifications.addChannel(
+                        new DeduplicatingChannel(new TelegramChannel(telegramToken, telegramChatId)));
+                System.out.println("Telegram notifications are ON");
+            } catch (IllegalArgumentException e) {
+                System.err.println("Telegram notifications are OFF: " + e.getMessage());
+            }
+        } else {
+            System.out.println("Telegram notifications are OFF "
+                    + "(set TELEGRAM_BOT_TOKEN and TELEGRAM_CHAT_ID to turn them on)");
+        }
         publisher.subscribe(notifications);
 
         return publisher;
