@@ -18,7 +18,12 @@ export default function AuditLogs() {
     return () => controller.abort()
   }, [])
 
-  const filtered = logs.filter((log) => {
+  // newest first, and a unique key per row (several records can share one timestamp)
+  const numbered = [...logs]
+    .sort((a, b) => String(b.timestamp).localeCompare(String(a.timestamp)))
+    .map((log, index) => ({ ...log, rowId: `${log.timestamp}-${index}` }))
+
+  const filtered = numbered.filter((log) => {
     if (!query.trim()) return true
     const q = query.toLowerCase()
     return (
@@ -45,11 +50,17 @@ export default function AuditLogs() {
         <p>Loading audit records…</p>
       ) : (
         <DataTable
-          rowKey="timestamp"
+          rowKey="rowId"
           caption="Audit records"
           rows={filtered}
           columns={[
-            { key: 'timestamp', label: 'Timestamp' },
+            {
+              key: 'timestamp',
+              label: 'Time',
+              render: (r) => new Date(r.timestamp).toLocaleString('en-IN', {
+                day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit', second: '2-digit',
+              }),
+            },
             { key: 'incidentId', label: 'Incident' },
             { key: 'eventType', label: 'Event' },
             { key: 'actor', label: 'Actor' },
