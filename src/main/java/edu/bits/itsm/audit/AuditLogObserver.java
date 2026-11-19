@@ -16,8 +16,8 @@ public class AuditLogObserver implements IncidentObserver {
                 event.incidentId(),
                 event.type(),
                 event.actor(),
-                event.previousStatus() != null ? event.previousStatus().name() : null,
-                event.newStatus() != null ? event.newStatus().name() : null,
+                event.previousStatus(),
+                event.newStatus(),
                 event.description(),
                 event.timestamp()
         );
