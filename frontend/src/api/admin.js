@@ -37,3 +37,11 @@ export const setWorkloadLimit = (maxActiveIncidents) =>
 export const getSlaRisks = (minLevel, o) =>
   apiRequest(`/admin/sla-risks${minLevel ? `?minLevel=${minLevel}` : ''}`, o)
 export const getCorrelations = (o) => apiRequest('/admin/correlations', o)
+
+// ---- one incident, seen by an admin ----
+export const assignIncident = (id, technicianId) =>
+  apiRequest(`/incidents/${encodeURIComponent(id)}/assign`, { method: 'POST', body: { technicianId } })
+export const autoAssignIncident = (id) =>
+  apiRequest(`/incidents/${encodeURIComponent(id)}/auto-assign`, { method: 'POST' })
+export const closeIncident = (id, note) =>
+  apiRequest(`/incidents/${encodeURIComponent(id)}/close`, { method: 'POST', body: { note } })

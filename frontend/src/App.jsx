@@ -19,6 +19,7 @@ import LiveReportIncident from './pages/employee/LiveReportIncident'
 import AdminIncidents from './pages/admin/AdminIncidents'
 import Reports from './pages/admin/Reports'
 import AuditLogs from './pages/admin/AuditLogs'
+import AdminIncidentDetail from './pages/admin/AdminIncidentDetail'
 import AdminOverview from './pages/admin/AdminOverview'
 import AdminUsers from './pages/admin/AdminUsers'
 import AdminTechnicians from './pages/admin/AdminTechnicians'
@@ -126,6 +127,10 @@ export default function App() {
                 element={renderWorkspacePage(role, page)}
               />
             ))}
+
+          {role === 'admin' && (
+            <Route path="incidents/:id" element={<AdminIncidentDetail />} />
+          )}
 
           {['employee', 'technician'].includes(role) && (
             <Route path="incidents/:id" element={<IncidentDetails role={role} />} />

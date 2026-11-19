@@ -12,6 +12,8 @@ import {
   technicianAction,
   getIncident,
   getIncidentAudit,
+  provideInformation,
+  requestInformation,
   submitIncidentFeedback,
   USING_MOCKS,
   verifyIncident,
@@ -69,6 +71,8 @@ function IncidentDetailsContent({ id, role }) {
   const mounted = useRef(false)
   const [notice, setNotice] = useState(null)
   const [note, setNote] = useState('')
+  const [ask, setAsk] = useState('')
+  const [reply, setReply] = useState('')
   const [rating, setRating] = useState('5')
   const [comment, setComment] = useState('')
 
@@ -101,7 +105,7 @@ function IncidentDetailsContent({ id, role }) {
         }
       })
 
-    if (USING_MOCKS) getIncidentAudit(id, { signal: controller.signal })
+    getIncidentAudit(id, { signal: controller.signal })
       .then((items) => {
         if (active) {
           setAudit({ phase: 'ready', items, error: '' })
@@ -157,7 +161,7 @@ function IncidentDetailsContent({ id, role }) {
       afterSuccess?.()
 
       // Failure here must not make a successful update look unsuccessful.
-      if (USING_MOCKS) await refreshAudit()
+      await refreshAudit()
     } catch (error) {
       if (mounted.current) {
         setNotice({ type: 'error', message: error.message })
@@ -208,6 +212,7 @@ function IncidentDetailsContent({ id, role }) {
   const canGiveFeedback = !technician && ['RESOLVED', 'VERIFIED', 'CLOSED'].includes(
     incident.status,
   )
+  const lastQuestion = [...notesState.items].reverse().find((n) => n.type === 'INFO_REQUEST')
   const canAddNote = incident.status !== 'CLOSED' && !notesState.loading && !notesState.error
 
   return (
@@ -266,6 +271,53 @@ function IncidentDetailsContent({ id, role }) {
           )}
         </Card>
       )}
+      {technician && ['ASSIGNED', 'ACKNOWLEDGED', 'IN_PROGRESS'].includes(incident.status) && (
+        <Card title="Ask the reporter for more information">
+          {incident.awaitingInfo && (
+            <p className="subtitle">You asked a question and are waiting for the reporter's answer.</p>
+          )}
+          <form className="detail-form" onSubmit={(event) => {
+            event.preventDefault()
+            if (!ask.trim()) return
+            void runAction(
+              () => requestInformation(id, ask.trim()),
+              'Your question was sent to the reporter.',
+              () => { setAsk(''); setNotesAttempt((n) => n + 1) },
+            )
+          }}>
+            <label className="filter-field">Your question
+              <textarea required rows={3} value={ask} disabled={busy} onChange={(e) => setAsk(e.target.value)}
+                placeholder="For example: Which floor and room is the printer in?" />
+            </label>
+            <button className="secondary-button" disabled={busy || !ask.trim()}>
+              {busy ? 'Sending…' : 'Send question'}
+            </button>
+          </form>
+        </Card>
+      )}
+
+      {!technician && incident.awaitingInfo && (
+        <Card title="Support needs more information from you">
+          {lastQuestion && <p className="detail-description">“{lastQuestion.text}”</p>}
+          <form className="detail-form" onSubmit={(event) => {
+            event.preventDefault()
+            if (!reply.trim()) return
+            void runAction(
+              () => provideInformation(id, reply.trim()),
+              'Thank you. Your answer was sent to the technician.',
+              () => { setReply(''); setNotesAttempt((n) => n + 1) },
+            )
+          }}>
+            <label className="filter-field">Your answer
+              <textarea required rows={3} value={reply} disabled={busy} onChange={(e) => setReply(e.target.value)} />
+            </label>
+            <button className="primary-button" disabled={busy || !reply.trim()}>
+              {busy ? 'Sending…' : 'Send answer'}
+            </button>
+          </form>
+        </Card>
+      )}
+
       <div className="incident-detail-grid">
         <div className="detail-stack">
           <Card title="Incident information">
@@ -318,6 +370,8 @@ function IncidentDetailsContent({ id, role }) {
                   <li key={`${entry.createdAt}-${index}`}>
                     <div className="note-meta">
                       <strong>{entry.author}</strong>
+                      {entry.type === 'INFO_REQUEST' && <span className="badge badge--warning">Question from support</span>}
+                      {entry.type === 'INFO_RESPONSE' && <span className="badge badge--info">Reply</span>}
                       <time dateTime={entry.createdAt}>
                         {formatDate(entry.createdAt)}
                       </time>
@@ -464,7 +518,7 @@ function IncidentDetailsContent({ id, role }) {
           )}
         </div>
 
-        {USING_MOCKS ? <Card title="Incident history">
+        {audit.phase !== 'unavailable' ? <Card title="Incident history">
           {audit.phase === 'loading' && (
             <p className="subtitle" role="status">Loading history…</p>
           )}

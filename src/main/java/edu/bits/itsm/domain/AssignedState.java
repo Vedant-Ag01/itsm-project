@@ -7,6 +7,12 @@ public class AssignedState implements IncidentState {
         return IncidentStatus.ASSIGNED;
     }
 
+    // An admin may hand it to someone else until the technician acknowledges it
+    @Override
+    public IncidentState assign() {
+        return this;
+    }
+
     @Override
     public IncidentState acknowledge() {
         return new AcknowledgedState();

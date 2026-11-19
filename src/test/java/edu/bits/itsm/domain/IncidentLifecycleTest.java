@@ -164,6 +164,21 @@ class IncidentLifecycleTest {
     }
 
     @Test
+    void anAssignedIncidentCanBeReassignedBeforeAcknowledgement() {
+        Incident incident = incidentAt(IncidentStatus.ASSIGNED);
+        Technician other = new Technician("T9", "Other", "other@bits.edu");
+        incident.assign(other);
+        assertEquals(IncidentStatus.ASSIGNED, incident.getStatus());
+        assertEquals(other, incident.getAssignedTechnician());
+    }
+
+    @Test
+    void anAcknowledgedIncidentCannotBeReassigned() {
+        Incident incident = incidentAt(IncidentStatus.ACKNOWLEDGED);
+        assertThrows(InvalidStateTransitionException.class, () -> incident.assign(technician()));
+    }
+
+    @Test
     void assignedIncidentCannotSkipAcknowledgement() {
         Incident incident = incidentAt(IncidentStatus.ASSIGNED);
         assertThrows(InvalidStateTransitionException.class, incident::startWork);

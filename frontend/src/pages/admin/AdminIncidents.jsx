@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react'
+import { Link } from 'react-router'
 import { getIncidents } from '../../api/incidents'
 import Card from '../../components/Card'
 import DataTable from '../../components/DataTable'
@@ -44,7 +45,11 @@ const INITIAL_FILTERS = {
 }
 
 const columns = [
-  { key: 'id', label: 'ID' },
+  {
+    key: 'id',
+    label: 'ID',
+    render: (row) => <Link className="incident-link" to={`/admin/incidents/${encodeURIComponent(row.id)}`}>{row.id}</Link>,
+  },
   { key: 'title', label: 'Title' },
   {
     key: 'service',

@@ -9,23 +9,36 @@ export default function NotificationBell({ role }) {
   const containerRef = useRef(null)
 
   useEffect(() => {
-    const controller = new AbortController()
+    let controller = new AbortController()
     setError('')
 
-    getNotifications({ signal: controller.signal })
-      .then((res) => {
-        if (!controller.signal.aborted) {
-          setData({
-            unread: res.unread ?? 0,
-            notifications: Array.isArray(res.notifications) ? res.notifications : [],
-          })
-        }
-      })
-      .catch((err) => {
-        if (!controller.signal.aborted) setError(err.message)
-      })
+    function load() {
+      controller.abort()
+      controller = new AbortController()
+      const current = controller
+      getNotifications({ signal: current.signal })
+        .then((res) => {
+          if (!current.signal.aborted) {
+            setData({
+              unread: res.unread ?? 0,
+              notifications: Array.isArray(res.notifications) ? res.notifications : [],
+            })
+          }
+        })
+        .catch((err) => {
+          if (!current.signal.aborted) setError(err.message)
+        })
+    }
 
-    return () => controller.abort()
+    load()
+    // Check for new alerts every 15 seconds, and again when the tab is focused.
+    const timer = setInterval(load, 15000)
+    window.addEventListener('focus', load)
+    return () => {
+      controller.abort()
+      clearInterval(timer)
+      window.removeEventListener('focus', load)
+    }
   }, [role])
 
   useEffect(() => {

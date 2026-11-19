@@ -89,7 +89,18 @@ export async function getIncident(id, { signal } = {}) {
     return getMockIncident(id)
   }
 
-  return normalizeIncident(await apiRequest(incidentPath(id), { signal }))
+  const incident = normalizeIncident(await apiRequest(incidentPath(id), { signal }))
+  try {
+    const sla = await apiRequest(`${incidentPath(id)}/sla`, { signal })
+    return {
+      ...incident,
+      responseDeadline: sla.responseDeadline,
+      resolutionDeadline: sla.resolutionDeadline,
+      slaStatus: incident.slaStatus ?? sla.status ?? null,
+    }
+  } catch {
+    return incident
+  }
 }
 
 export async function getIncidentAudit(id, { signal } = {}) {
@@ -97,8 +108,10 @@ export async function getIncidentAudit(id, { signal } = {}) {
     return getMockAudit(id)
   }
 
-  void signal
-  throw new ApiError('Incident history is not available yet.', 501)
+  const rows = await apiRequest(`${incidentPath(id)}/audit`, { signal })
+  return rows
+    .map((row) => ({ ...row, user: row.actor }))
+    .sort((a, b) => String(a.timestamp).localeCompare(String(b.timestamp)))
 }
 
 export async function addIncidentNote(id, text) {
@@ -133,9 +146,17 @@ export async function getReportServices() {
     return listMockServices()
   }
 
-  throw new Error(
-    'The employee service-list endpoint has not been configured yet.',
-  )
+  // the catalogue, active services only (names are what the report form sends back)
+  return apiRequest('/services')
+}
+
+// What category would the system pick for this text? (null when it cannot tell)
+export async function suggestCategory(title, description, { signal } = {}) {
+  if (USING_MOCKS) return null
+  const result = await apiRequest('/classification/suggest', {
+    method: 'POST', body: { title, description }, signal,
+  })
+  return result?.category ? result : null
 }
 
 export async function createIncident(input) {
@@ -156,7 +177,9 @@ function normalizeIncident(row) {
     reporter: { name: row.reporterName },
     assignedTechnician: row.assignedTechnician ? { name: row.assignedTechnician } : null,
     slaStatus: row.slaStatus ?? null,
-    feedback: row.feedbackRating == null ? null : { rating: row.feedbackRating, comment: row.feedbackComment },
+    feedback: row.feedbackRating != null
+      ? { rating: row.feedbackRating, comment: row.feedbackComment }
+      : null,
   }
 }
 
@@ -171,5 +194,21 @@ export async function technicianAction(id, action, note) {
   if (!['acknowledge', 'start-work', 'resolve'].includes(action)) throw new Error('Unknown action.')
   return normalizeIncident(await apiRequest(`${incidentPath(id)}/${action}`, {
     method: 'POST', ...(action === 'resolve' ? { body: { note } } : {}),
+  }))
+}
+
+// Technician asks the reporter a question (status does not change)
+export async function requestInformation(id, message) {
+  if (USING_MOCKS) throw new ApiError('Information requests require live mode.', 501)
+  return normalizeIncident(await apiRequest(`${incidentPath(id)}/request-info`, {
+    method: 'POST', body: { message },
+  }))
+}
+
+// Reporter answers the question
+export async function provideInformation(id, message) {
+  if (USING_MOCKS) throw new ApiError('Information replies require live mode.', 501)
+  return normalizeIncident(await apiRequest(`${incidentPath(id)}/provide-info`, {
+    method: 'POST', body: { message },
   }))
 }

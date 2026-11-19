@@ -1,29 +1,39 @@
-import { useRef, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { Link } from 'react-router'
 import Card from '../../components/Card'
-import { createIncident } from '../../api/incidents'
+import { createIncident, getReportServices, suggestCategory } from '../../api/incidents'
 
-const CATALOGUE_SERVICES = [
-  'Campus WiFi',
-  'VPN Gateway',
-  'Payroll System',
-  'Student Portal',
-  'Identity Provider',
-  'SSO Login',
-  'Staff Email',
-  'File Server',
-  'Cloud Storage',
-  'Lab Printing',
-  'Classroom AV',
-]
+const CATEGORIES = ['HARDWARE', 'SOFTWARE', 'NETWORK', 'DATABASE', 'CLOUD', 'SECURITY', 'AUTHENTICATION', 'APPLICATION', 'STORAGE']
 
-const empty = { title: '', description: '', serviceName: '', criticality: '', impact: '', urgency: '', affectedUsers: '1' }
+const empty = { title: '', description: '', serviceName: '', category: '', impact: '', urgency: '', affectedUsers: '1' }
 export default function LiveReportIncident() {
   const [form, setForm] = useState(empty)
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState('')
   const [result, setResult] = useState(null)
   const lock = useRef(false)
+  const [services, setServices] = useState([])
+  const [suggestion, setSuggestion] = useState(null)
+
+  // the service list comes from the catalogue, so admin changes show up here
+  useEffect(() => {
+    getReportServices()
+      .then((rows) => setServices(rows.map((row) => row.name)))
+      .catch((failure) => setError(`Could not load the services: ${failure.message}`))
+  }, [])
+
+  // as the person types, ask the system what category it would choose
+  useEffect(() => {
+    if (form.title.trim().length + form.description.trim().length < 8) { setSuggestion(null); return undefined }
+    const controller = new AbortController()
+    const timer = setTimeout(() => {
+      suggestCategory(form.title, form.description, { signal: controller.signal })
+        .then((found) => { if (!controller.signal.aborted) setSuggestion(found) })
+        .catch(() => { if (!controller.signal.aborted) setSuggestion(null) })
+    }, 400)
+    return () => { clearTimeout(timer); controller.abort() }
+  }, [form.title, form.description])
+
   function change(event) { setForm({ ...form, [event.target.name]: event.target.value }); setError('') }
   async function submit(event) {
     event.preventDefault()
@@ -33,7 +43,7 @@ export default function LiveReportIncident() {
     if (!Number.isSafeInteger(affectedUsers) || affectedUsers < 1) { setError('Affected users must be a positive whole number.'); return }
     lock.current = true; setBusy(true); setError('')
     try {
-      setResult(await createIncident({ ...form, title: form.title.trim(), description: form.description.trim(), serviceName: form.serviceName.trim(), affectedUsers }))
+      setResult(await createIncident({ ...form, category: form.category || undefined, title: form.title.trim(), description: form.description.trim(), serviceName: form.serviceName.trim(), affectedUsers }))
     } catch (failure) { setError(failure.message) }
     finally { lock.current = false; setBusy(false) }
   }
@@ -53,14 +63,27 @@ export default function LiveReportIncident() {
             Affected service
             <select name="serviceName" required value={form.serviceName} onChange={change}>
               <option value="">Choose a service</option>
-              {CATALOGUE_SERVICES.map((service) => <option key={service} value={service}>{service}</option>)}
+              {services.map((service) => <option key={service} value={service}>{service}</option>)}
             </select>
           </label>
-          {['criticality', 'impact', 'urgency'].map((field) => <label className="report-field" key={field}>
-            {field === 'criticality' ? 'Service business criticality' : field === 'impact' ? 'Impact' : 'Urgency'}
+          {['impact', 'urgency'].map((field) => <label className="report-field" key={field}>
+            {field === 'impact' ? 'Impact' : 'Urgency'}
             <select name={field} required value={form[field]} onChange={change}><option value="">Choose a level</option>{['LOW', 'MEDIUM', 'HIGH'].map((level) => <option key={level} value={level}>{level}</option>)}</select>
-            {field === 'criticality' && <span className="report-help">How essential is this service to business operations? Ask support if unsure.</span>}
           </label>)}
+          <label className="report-field">
+            Category
+            <select name="category" value={form.category} onChange={change}>
+              <option value="">Let the system decide (recommended)</option>
+              {CATEGORIES.map((category) => <option key={category} value={category}>{category}</option>)}
+            </select>
+            <span className="report-help">
+              {form.category
+                ? 'You chose this category yourself.'
+                : suggestion
+                  ? `Suggested from your description: ${suggestion.category} (matched: ${suggestion.matchedKeywords.join(', ')}).`
+                  : 'The system will pick a category from your title and description. Choose one yourself if you want to.'}
+            </span>
+          </label>
           <label className="report-field">Affected users<input name="affectedUsers" type="number" min="1" step="1" required value={form.affectedUsers} onChange={change} /></label>
         </div>
         <button className="primary-button" type="submit">{busy ? 'Submitting…' : 'Submit incident'}</button>
