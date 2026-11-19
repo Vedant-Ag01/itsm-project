@@ -20,6 +20,8 @@ import edu.bits.itsm.domain.ItService;
 import edu.bits.itsm.domain.Priority;
 import edu.bits.itsm.domain.ServiceInfo;
 import edu.bits.itsm.domain.Technician;
+import edu.bits.itsm.domain.TechnicianOverloadedException;
+import edu.bits.itsm.domain.TechnicianUnavailableException;
 import edu.bits.itsm.duplicate.DuplicateMatch;
 import edu.bits.itsm.search.IncidentSearchCriteria;
 import edu.bits.itsm.search.IncidentSearchService;
@@ -108,8 +110,18 @@ public class IncidentController {
             duplicateIds.add(match.other().getId());
         }
 
-        return new CreateIncidentResponse(
-                IncidentResponse.from(result.incident()), duplicateIds);
+        // Hand it to a technician straight away, using the strategy the admin has chosen.
+        // If nobody can take it (all unavailable or at the workload limit), it simply stays
+        // unassigned and an admin can assign it by hand.
+        Incident created = result.incident();
+        try {
+            incidentService.autoAssign(created.getId(), "System");
+            created = incidentService.getIncident(created.getId());
+        } catch (TechnicianUnavailableException | TechnicianOverloadedException e) {
+            // stays CLASSIFIED and unassigned
+        }
+
+        return new CreateIncidentResponse(IncidentResponse.from(created), duplicateIds);
     }
 
     // All filters are optional. Example: /api/incidents?status=RESOLVED&q=vpn&slaStatus=BREACHED

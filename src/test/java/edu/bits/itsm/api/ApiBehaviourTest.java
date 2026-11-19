@@ -367,14 +367,12 @@ class ApiBehaviourTest {
     @Test
     void verifyingBeforeItIsResolvedGives409() throws Exception {
         String id = reportIncident();
-        assertEquals(200, code(as(post("/api/incidents/" + id + "/auto-assign"), admin)));
         assertEquals(409, code(as(post("/api/incidents/" + id + "/verify"), asha)));
     }
 
     @Test
     void editingAResolvedIncidentGives409() throws Exception {
         String id = reportIncident();
-        assertEquals(200, code(as(post("/api/incidents/" + id + "/auto-assign"), admin)));
         assertEquals(200, code(as(post("/api/incidents/" + id + "/acknowledge"), ravi)));
         assertEquals(200, code(as(post("/api/incidents/" + id + "/start-work"), ravi)));
         assertEquals(200, code(as(json(post("/api/incidents/" + id + "/resolve"),
@@ -413,7 +411,6 @@ class ApiBehaviourTest {
     @Test
     void theAssignedTechnicianCanAskAndTheReporterCanAnswer() throws Exception {
         String id = reportIncident();
-        assertEquals(200, code(as(post("/api/incidents/" + id + "/auto-assign"), admin)));
 
         String asked = mvc.perform(as(json(post("/api/incidents/" + id + "/request-info"),
                 "{\"message\":\"Which floor exactly?\"}"), ravi))
@@ -429,7 +426,6 @@ class ApiBehaviourTest {
     @Test
     void aTechnicianNotAssignedCannotRequestInfo() throws Exception {
         String id = reportIncident();
-        assertEquals(200, code(as(post("/api/incidents/" + id + "/auto-assign"), admin)));
         assertEquals(403, code(as(json(post("/api/incidents/" + id + "/request-info"),
                 "{\"message\":\"Which floor?\"}"), meera)));
     }
@@ -437,7 +433,6 @@ class ApiBehaviourTest {
     @Test
     void anotherEmployeeCannotAnswerForTheReporter() throws Exception {
         String id = reportIncident();
-        assertEquals(200, code(as(post("/api/incidents/" + id + "/auto-assign"), admin)));
         assertEquals(200, code(as(json(post("/api/incidents/" + id + "/request-info"),
                 "{\"message\":\"Which floor?\"}"), ravi)));
         assertEquals(403, code(as(json(post("/api/incidents/" + id + "/provide-info"),
@@ -449,7 +444,6 @@ class ApiBehaviourTest {
     @Test
     void aTechnicianSeesTheirOwnWorkload() throws Exception {
         String id = reportIncident();
-        assertEquals(200, code(as(post("/api/incidents/" + id + "/auto-assign"), admin)));
         String body = mvc.perform(as(get("/api/technician/workload"), ravi))
                 .andExpect(status().isOk()).andReturn().getResponse().getContentAsString();
         assertTrue(body.contains("\"activeIncidents\":1"));
@@ -465,13 +459,11 @@ class ApiBehaviourTest {
     void whenTheLimitIsReachedAutoAssignGives409() throws Exception {
         assertEquals(200, code(as(json(put("/api/admin/workload-limit"),
                 "{\"maxActiveIncidents\":1}"), admin)));
-        // two technicians exist but the test strategy always picks the first one,
-        // and only Ravi is "first": once he is full, nobody else is offered
+        // reporting an incident auto-assigns it: the test strategy always picks the first
+        // candidate, so Ravi gets the first, Meera the second (Ravi is then full), and the
+        // third finds nobody and stays unassigned
         String first = reportIncident();
         String second = reportIncident();
-        assertEquals(200, code(as(post("/api/incidents/" + first + "/auto-assign"), admin)));
-        // Meera is still free, so the second goes to her; the third finds nobody
-        assertEquals(200, code(as(post("/api/incidents/" + second + "/auto-assign"), admin)));
         String third = reportIncident();
         assertEquals(409, code(as(post("/api/incidents/" + third + "/auto-assign"), admin)));
     }
@@ -547,5 +539,26 @@ class ApiBehaviourTest {
     @Test
     void anUnknownMinLevelGives400() throws Exception {
         assertEquals(400, code(as(get("/api/admin/sla-risks?minLevel=EXTREME"), admin)));
+    }
+
+    @Test
+    void reportingAnIncidentAssignsATechnicianStraightAway() throws Exception {
+        String id = reportIncident();
+        String body = mvc.perform(as(get("/api/incidents/" + id), asha))
+                .andExpect(status().isOk()).andReturn().getResponse().getContentAsString();
+        assertTrue(body.contains("\"status\":\"ASSIGNED\""));
+        assertTrue(body.contains("\"assignedTechnician\":\"Ravi\""));
+    }
+
+    @Test
+    void whenNobodyCanTakeItTheIncidentStaysUnassigned() throws Exception {
+        assertEquals(200, code(as(json(put("/api/admin/workload-limit"),
+                "{\"maxActiveIncidents\":1}"), admin)));
+        reportIncident();
+        reportIncident();
+        String third = reportIncident();
+        String body = mvc.perform(as(get("/api/incidents/" + third), asha))
+                .andExpect(status().isOk()).andReturn().getResponse().getContentAsString();
+        assertTrue(body.contains("\"status\":\"CLASSIFIED\""));
     }
 }

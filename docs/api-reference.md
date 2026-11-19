@@ -39,7 +39,7 @@ priority = P1..P4. SLA status = ON_TRACK, AT_RISK, BREACHED.
 | PUT | /incidents/{id} | reporting EMPLOYEE, ADMIN | body any of `{title, description, impact, urgency, affectedUsers}` (omitted = unchanged). Priority is recalculated; audit gets INCIDENT_UPDATED and, if it changed, PRIORITY_CHANGED. Not allowed once RESOLVED/VERIFIED/CLOSED (409). Limits: title 200 chars, description 2000, affectedUsers 1 to 100000. |
 | POST | /incidents/{id}/request-info | assigned TECHNICIAN, ADMIN | body `{message}`. Asks the reporter a question; the incident status does not change and `awaitingInfo` becomes true. |
 | POST | /incidents/{id}/provide-info | reporting EMPLOYEE, ADMIN | body `{message}`. Answers the question; `awaitingInfo` becomes false. 400 if nothing was asked. |
-| POST | /incidents/{id}/auto-assign | ADMIN | uses the current assignment strategy |
+| POST | /incidents/{id}/auto-assign | ADMIN | uses the current assignment strategy. A new incident is also auto-assigned the moment it is reported; if nobody is available or all are at the limit it stays unassigned (status CLASSIFIED) until an admin assigns it. |
 | POST | /incidents/{id}/assign | ADMIN | body `{technicianId}` |
 | POST | /incidents/{id}/acknowledge | assigned TECHNICIAN, ADMIN | |
 | POST | /incidents/{id}/start-work | assigned TECHNICIAN, ADMIN | |
