@@ -1,4 +1,5 @@
 import { useRef, useState } from 'react'
+import { Link } from 'react-router'
 import { signIn } from '../auth/session'
 import { USING_MOCKS } from '../api/incidents'
 import ThemeToggle from '../components/ThemeToggle'
@@ -27,5 +28,8 @@ export default function Login({ theme, onToggle }) {
       {error && <p role="alert">{error}</p>}
       <button className="primary-button" disabled={busy}>{busy ? 'Signing in…' : 'Sign in'}</button>
     </form>
+    <p className="subtitle" style={{ marginTop: '1rem' }}>
+      New employee? <Link to="/register">Create an account</Link>
+    </p>
   </section></main>
 }

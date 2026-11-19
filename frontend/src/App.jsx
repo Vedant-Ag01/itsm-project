@@ -12,7 +12,11 @@ import './App.css'
 import ReportIncident from './pages/employee/ReportIncident'
 import SessionGate from './auth/SessionGate'
 import Login from './pages/Login'
+import Register from './pages/Register'
 import LiveReportIncident from './pages/employee/LiveReportIncident'
+import AdminIncidents from './pages/admin/AdminIncidents'
+import Reports from './pages/admin/Reports'
+import AuditLogs from './pages/admin/AuditLogs'
 import { USING_MOCKS } from './api/incidents'
 
 function getInitialTheme() {
@@ -42,24 +46,38 @@ export default function App() {
   }, [theme])
 
   function toggleTheme() {
-    setTheme((current) => current === 'dark' ? 'light' : 'dark')
+    setTheme((current) => (current === 'dark' ? 'light' : 'dark'))
+  }
+
+  function renderWorkspacePage(role, page) {
+    if (role === 'employee' && page.path === 'incidents') return <MyIncidents />
+    if (role === 'employee' && page.path === 'report') {
+      return USING_MOCKS ? <ReportIncident /> : <LiveReportIncident />
+    }
+    if ((role === 'employee' || role === 'technician') && page.path === 'notifications') {
+      return <Notifications />
+    }
+    if (role === 'admin' && page.path === 'incidents') return <AdminIncidents />
+    if (role === 'admin' && page.path === 'reports') return <Reports />
+    if (role === 'admin' && page.path === 'audit') return <AuditLogs />
+
+    return <PlaceholderPage title={page.label} role={role} />
   }
 
   return (
     <Routes>
       <Route path="/" element={<Navigate to="/login" replace />} />
       <Route path="/login" element={<SessionGate><Login theme={theme} onToggle={toggleTheme} /></SessionGate>} />
+      <Route path="/register" element={<SessionGate><Register theme={theme} onToggle={toggleTheme} /></SessionGate>} />
 
       {Object.entries(workspaces).map(([role, workspace]) => (
         <Route
           key={role}
           path={`/${role}`}
           element={
-            <SessionGate role={role}><WorkspaceLayout
-              role={role}
-              theme={theme}
-              onToggle={toggleTheme}
-            /></SessionGate>
+            <SessionGate role={role}>
+              <WorkspaceLayout role={role} theme={theme} onToggle={toggleTheme} />
+            </SessionGate>
           }
         >
           <Route
@@ -67,12 +85,7 @@ export default function App() {
             element={
               role === 'employee'
                 ? <EmployeeOverview />
-                : (
-                  <PlaceholderPage
-                    title={workspace.pages[0].label}
-                    role={role}
-                  />
-                )
+                : <PlaceholderPage title={workspace.pages[0].label} role={role} />
             }
           />
 
@@ -82,17 +95,7 @@ export default function App() {
               <Route
                 key={page.path}
                 path={page.path}
-                element={
-  role === 'employee' && page.path === 'incidents' ? (
-    <MyIncidents />
-  ) : role === 'employee' && page.path === 'report' ? (
-    USING_MOCKS ? <ReportIncident /> : <LiveReportIncident />
-  ) : role === 'employee' && page.path === 'notifications' ? (
-    <Notifications />
-  ) : (
-    <PlaceholderPage title={page.label} role={role} />
-  )
-}
+                element={renderWorkspacePage(role, page)}
               />
             ))}
 
@@ -100,10 +103,7 @@ export default function App() {
             <Route path="incidents/:id" element={<IncidentDetails />} />
           )}
 
-          <Route
-            path="*"
-            element={<NotFound home={pageUrl(role)} />}
-          />
+          <Route path="*" element={<NotFound home={pageUrl(role)} />} />
         </Route>
       ))}
 
