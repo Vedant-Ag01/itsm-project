@@ -154,7 +154,7 @@ public class IncidentController {
 
         List<IncidentResponse> responses = new ArrayList<>();
         for (Incident incident : found) {
-            responses.add(IncidentResponse.from(incident));
+            responses.add(IncidentResponse.from(incident, slaStatusOf(incident)));
         }
         return responses;
     }
@@ -163,7 +163,7 @@ public class IncidentController {
     public IncidentResponse getOne(@PathVariable String id) {
         Incident incident = incidentService.getIncident(id);
         IncidentAccess.requireCanSee(CurrentUser.get(), incident);
-        return IncidentResponse.from(incident);
+        return IncidentResponse.from(incident, slaStatusOf(incident));
     }
 
     // The reporter (or an admin) corrects the details. The priority is recalculated.

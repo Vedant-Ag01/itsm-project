@@ -10,7 +10,7 @@ Errors always look like `{ "status": 409, "error": "Conflict", "message": "...",
 409 = illegal lifecycle move, nobody available to assign, technician workload exceeded, missing SLA configuration,
 503 = database temporarily unavailable.
 
-An incident object also carries `awaitingInfo` (true while a technician's question is unanswered).
+An incident object also carries `awaitingInfo` (true while a technician's question is unanswered). In the list and single-incident responses it also carries `slaStatus` (`ON_TRACK`, `AT_RISK` or `BREACHED`; null if it cannot be judged).
 The incident's serviceName must be one from `GET /services`; its criticality is taken from the service catalogue
 (the criticality sent in the request is ignored).
 

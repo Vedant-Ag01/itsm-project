@@ -17,6 +17,13 @@ import LiveReportIncident from './pages/employee/LiveReportIncident'
 import AdminIncidents from './pages/admin/AdminIncidents'
 import Reports from './pages/admin/Reports'
 import AuditLogs from './pages/admin/AuditLogs'
+import AdminOverview from './pages/admin/AdminOverview'
+import AdminUsers from './pages/admin/AdminUsers'
+import AdminTechnicians from './pages/admin/AdminTechnicians'
+import AdminServices from './pages/admin/AdminServices'
+import AdminSlaPolicies from './pages/admin/AdminSlaPolicies'
+import AdminAssignment from './pages/admin/AdminAssignment'
+import AdminSlaViolations from './pages/admin/AdminSlaViolations'
 import { USING_MOCKS } from './api/incidents'
 
 function getInitialTheme() {
@@ -60,6 +67,12 @@ export default function App() {
     if (role === 'admin' && page.path === 'incidents') return <AdminIncidents />
     if (role === 'admin' && page.path === 'reports') return <Reports />
     if (role === 'admin' && page.path === 'audit') return <AuditLogs />
+    if (role === 'admin' && page.path === 'users') return <AdminUsers />
+    if (role === 'admin' && page.path === 'technicians') return <AdminTechnicians />
+    if (role === 'admin' && page.path === 'services') return <AdminServices />
+    if (role === 'admin' && page.path === 'sla-policies') return <AdminSlaPolicies />
+    if (role === 'admin' && page.path === 'assignment') return <AdminAssignment />
+    if (role === 'admin' && page.path === 'sla-violations') return <AdminSlaViolations />
 
     return <PlaceholderPage title={page.label} role={role} />
   }
@@ -85,7 +98,9 @@ export default function App() {
             element={
               role === 'employee'
                 ? <EmployeeOverview />
-                : <PlaceholderPage title={workspace.pages[0].label} role={role} />
+                : role === 'admin'
+                  ? <AdminOverview />
+                  : <PlaceholderPage title={workspace.pages[0].label} role={role} />
             }
           />
 

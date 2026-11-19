@@ -25,10 +25,16 @@ public record IncidentResponse(
         String closureNote,
         Integer feedbackRating,
         String feedbackComment,
-        boolean awaitingInfo) {
+        boolean awaitingInfo,
+        String slaStatus) {
 
     // Turns a domain Incident into the shape we send out
     public static IncidentResponse from(Incident incident) {
+        return from(incident, null);
+    }
+
+    // slaStatus is "ON_TRACK", "AT_RISK" or "BREACHED" (null where it was not worked out)
+    public static IncidentResponse from(Incident incident, String slaStatus) {
         String priority = null;
         if (incident.getPriority() != null) {
             priority = incident.getPriority().name();
@@ -72,6 +78,7 @@ public record IncidentResponse(
                 incident.getClosureNote(),
                 rating,
                 ratingComment,
-                incident.isAwaitingInfo());
+                incident.isAwaitingInfo(),
+                slaStatus);
     }
 }
