@@ -3,6 +3,20 @@ import { Link } from 'react-router'
 import Card from '../../components/Card'
 import { createIncident } from '../../api/incidents'
 
+const CATALOGUE_SERVICES = [
+  'Campus WiFi',
+  'VPN Gateway',
+  'Payroll System',
+  'Student Portal',
+  'Identity Provider',
+  'SSO Login',
+  'Staff Email',
+  'File Server',
+  'Cloud Storage',
+  'Lab Printing',
+  'Classroom AV',
+]
+
 const empty = { title: '', description: '', serviceName: '', criticality: '', impact: '', urgency: '', affectedUsers: '1' }
 export default function LiveReportIncident() {
   const [form, setForm] = useState(empty)
@@ -34,8 +48,14 @@ export default function LiveReportIncident() {
       <fieldset className="report-fields" disabled={busy}>
         <label className="report-field">Title<input name="title" required value={form.title} onChange={change} /></label>
         <label className="report-field">Description<textarea name="description" required rows={5} value={form.description} onChange={change} /></label>
-        <label className="report-field">Affected service<input name="serviceName" required value={form.serviceName} onChange={change} placeholder="For example: Campus Wi-Fi" /></label>
         <div className="report-form-grid">
+          <label className="report-field">
+            Affected service
+            <select name="serviceName" required value={form.serviceName} onChange={change}>
+              <option value="">Choose a service</option>
+              {CATALOGUE_SERVICES.map((service) => <option key={service} value={service}>{service}</option>)}
+            </select>
+          </label>
           {['criticality', 'impact', 'urgency'].map((field) => <label className="report-field" key={field}>
             {field === 'criticality' ? 'Service business criticality' : field === 'impact' ? 'Impact' : 'Urgency'}
             <select name={field} required value={form[field]} onChange={change}><option value="">Choose a level</option>{['LOW', 'MEDIUM', 'HIGH'].map((level) => <option key={level} value={level}>{level}</option>)}</select>
