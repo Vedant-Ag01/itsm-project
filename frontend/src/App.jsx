@@ -14,6 +14,8 @@ import './design-polish.css'
 import ReportIncident from './pages/employee/ReportIncident'
 import SessionGate from './auth/SessionGate'
 import Login from './pages/Login'
+import Register from './pages/Register'
+import './registration.css'
 import LiveReportIncident from './pages/employee/LiveReportIncident'
 import { USING_MOCKS } from './api/incidents'
 
@@ -57,6 +59,8 @@ export default function App() {
     <Routes>
       <Route path="/" element={<Navigate to="/login" replace />} />
       <Route path="/login" element={<SessionGate><Login theme={theme} onToggle={toggleTheme} /></SessionGate>} />
+
+      <Route path="/register" element={<SessionGate><Register theme={theme} onToggle={toggleTheme} /></SessionGate>} />
 
       {Object.entries(workspaces).map(([role, workspace]) => (
         <Route

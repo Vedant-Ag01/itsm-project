@@ -52,7 +52,7 @@ export async function apiRequest(
     )
   }
 
-  if (response.status === 401 && path !== '/auth/login') {
+  if (response.status === 401 && !['/auth/login', '/auth/register'].includes(path)) {
     window.dispatchEvent(new Event('itsm-session-expired'))
   }
 

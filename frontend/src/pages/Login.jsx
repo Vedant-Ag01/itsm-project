@@ -1,9 +1,11 @@
-import { useRef, useState } from 'react'
+import { Link } from 'react-router'
+import { useEffect, useRef, useState } from 'react'
 import { signIn } from '../auth/session'
 import { USING_MOCKS } from '../api/incidents'
 import ThemeToggle from '../components/ThemeToggle'
 
 export default function Login({ theme, onToggle }) {
+  useEffect(() => { document.title = 'Sign in · I-ITSM' }, [])
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [busy, setBusy] = useState(false)
@@ -27,5 +29,6 @@ export default function Login({ theme, onToggle }) {
       {error && <p role="alert">{error}</p>}
       <button className="primary-button" disabled={busy}>{busy ? 'Signing in…' : 'Sign in'}</button>
     </form>
+    <p>New here? <Link className="incident-link" to="/register">Create an employee account</Link></p>
   </section></main>
 }
