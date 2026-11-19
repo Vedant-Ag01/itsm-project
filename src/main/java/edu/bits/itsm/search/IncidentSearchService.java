@@ -27,7 +27,6 @@ public class IncidentSearchService {
                     inc.getId().equalsIgnoreCase(criteria.getIncidentId().trim()));
         }
 
-        // Free-text query (?q=): matches id, title, or description (case-insensitive)
         if (isSet(criteria.getQuery())) {
             String q = criteria.getQuery().trim().toLowerCase();
             predicates.add(inc ->
@@ -61,7 +60,6 @@ public class IncidentSearchService {
                     inc.getAssignedTechnician().getId().equalsIgnoreCase(criteria.getTechnicianId().trim()));
         }
 
-        // Inclusive date range on createdAt
         if (criteria.getFromDate() != null) {
             predicates.add(inc -> {
                 if (inc.getCreatedAt() == null) return false;

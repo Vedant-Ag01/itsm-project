@@ -4,7 +4,7 @@ import java.time.LocalDate;
 
 public class IncidentSearchCriteria {
     private final String incidentId;
-    private final String query; // Free-text search across id, title, or description (?q=)
+    private final String query;
     private final LocalDate fromDate;
     private final LocalDate toDate;
     private final String status;
