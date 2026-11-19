@@ -128,14 +128,7 @@ public class ApiExceptionHandler {
     @ExceptionHandler(Exception.class)
     public ResponseEntity<ErrorResponse> unexpected(Exception e) {
         e.printStackTrace();
-        // TEMPORARY while debugging: show what failed. Put the plain message back before the freeze.
-        Throwable root = e;
-        while (root.getCause() != null && root.getCause() != root) {
-            root = root.getCause();
-        }
-        return reply(HttpStatus.INTERNAL_SERVER_ERROR, "Something went wrong on the server ["
-                + e.getClass().getSimpleName() + ": " + e.getMessage()
-                + " | root cause: " + root.getClass().getSimpleName() + ": " + root.getMessage() + "]");
+        return reply(HttpStatus.INTERNAL_SERVER_ERROR, "Something went wrong on the server");
     }
 
     private ResponseEntity<ErrorResponse> reply(HttpStatus status, String message) {

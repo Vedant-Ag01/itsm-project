@@ -47,7 +47,7 @@ public class KeywordCategoryClassifier implements CategoryClassifier {
         for (Map.Entry<IncidentCategory, List<String>> entry : rules.entrySet()) {
             List<String> matched = new ArrayList<>();
             for (String keyword : entry.getValue()) {
-                if (combined.contains(keyword.toLowerCase())) {
+                if (containsWord(combined, keyword.toLowerCase())) {
                     matched.add(keyword);
                 }
             }
@@ -64,5 +64,11 @@ public class KeywordCategoryClassifier implements CategoryClassifier {
 
         double confidence = Math.min(1.0, 0.4 + (0.2 * bestMatches.size()));
         return Optional.of(new CategorySuggestion(bestCategory, confidence, List.copyOf(bestMatches)));
+    }
+
+    // Whole-word match (a plural 's' or 'es' is fine), so "os" does not match inside "hostel"
+    private static boolean containsWord(String text, String keyword) {
+        String pattern = "(?<![a-z0-9])" + java.util.regex.Pattern.quote(keyword) + "(?:e?s)?(?![a-z0-9])";
+        return java.util.regex.Pattern.compile(pattern).matcher(text).find();
     }
 }

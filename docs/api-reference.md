@@ -104,3 +104,10 @@ and ESCALATED events into the audit trail and the notifications.
 
 Telegram: if the environment variables `TELEGRAM_BOT_TOKEN` and `TELEGRAM_CHAT_ID` are set when the backend starts,
 every notification is also posted to that Telegram chat (once per event). Without them Telegram is simply off.
+
+## Intelligence (correlation and suggestions)
+
+| Method | Path | Who | What |
+|---|---|---|---|
+| GET | `/api/admin/correlations` | ADMIN | Possible outages: groups of 2+ open incidents on the same service created within the last 60 minutes. Each group has serviceName, category, windowStart/End, count, summary, incidents[]. |
+| GET | `/api/incidents/{id}/resolution-suggestions?limit=3` | TECHNICIAN, ADMIN | Similar past resolved incidents (same words, service, category) with their resolution note and a similarity score 0-1. Limit 1-10. |

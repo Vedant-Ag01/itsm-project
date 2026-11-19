@@ -35,4 +35,21 @@ public class KeywordCategoryClassifierTest {
     void testHandlesNullAndBlankInputsSafely() {
         assertTrue(classifier.suggest(null, "   ").isEmpty());
     }
+
+    @Test
+    void testShortKeywordDoesNotMatchInsideOtherWords() {
+        Optional<CategorySuggestion> result =
+                classifier.suggest("Wi-Fi drops in hostel block", "Wi-Fi keeps disconnecting");
+
+        assertTrue(result.isPresent());
+        assertEquals(IncidentCategory.NETWORK, result.get().category());
+    }
+
+    @Test
+    void testPluralFormsStillMatch() {
+        Optional<CategorySuggestion> result = classifier.suggest("Printers broken", "Two printers are jammed");
+
+        assertTrue(result.isPresent());
+        assertEquals(IncidentCategory.HARDWARE, result.get().category());
+    }
 }
