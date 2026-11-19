@@ -18,4 +18,7 @@ public class NoteData {
     public String noteText;
 
     public LocalDateTime createdAt;
+
+    // NOTE, INFO_REQUEST or INFO_RESPONSE. Empty in rows saved before this column existed.
+    public String noteType;
 }

@@ -9,12 +9,17 @@ public class InvestigationNote {
     private final User author;
     private final String text;
     private final LocalDateTime createdAt;
+    private final NoteType type;
 
     public InvestigationNote(User author, String text) {
-        this(author, text, LocalDateTime.now());
+        this(author, text, NoteType.NOTE);
     }
 
-    private InvestigationNote(User author, String text, LocalDateTime createdAt) {
+    public InvestigationNote(User author, String text, NoteType type) {
+        this(author, text, LocalDateTime.now(), type);
+    }
+
+    private InvestigationNote(User author, String text, LocalDateTime createdAt, NoteType type) {
         if (author == null) {
             throw new InvalidIncidentException("A note must have an author");
         }
@@ -24,14 +29,20 @@ public class InvestigationNote {
         this.author = author;
         this.text = text;
         this.createdAt = createdAt;
+        this.type = type == null ? NoteType.NOTE : type;
     }
 
     // For the database layer only: rebuilds a saved note with its original time
     public static InvestigationNote restore(User author, String text, LocalDateTime createdAt) {
+        return restore(author, text, createdAt, NoteType.NOTE);
+    }
+
+    public static InvestigationNote restore(User author, String text, LocalDateTime createdAt,
+                                            NoteType type) {
         if (createdAt == null) {
             throw new InvalidIncidentException("A saved note must have its original time");
         }
-        return new InvestigationNote(author, text, createdAt);
+        return new InvestigationNote(author, text, createdAt, type);
     }
 
     public User getAuthor() {
@@ -44,5 +55,9 @@ public class InvestigationNote {
 
     public LocalDateTime getCreatedAt() {
         return createdAt;
+    }
+
+    public NoteType getType() {
+        return type;
     }
 }

@@ -2,6 +2,7 @@ package edu.bits.itsm.api;
 
 import edu.bits.itsm.api.dto.AddNoteRequest;
 import edu.bits.itsm.api.dto.FeedbackRequest;
+import edu.bits.itsm.api.dto.InfoMessageRequest;
 import edu.bits.itsm.api.dto.IncidentResponse;
 import edu.bits.itsm.api.dto.NoteResponse;
 import edu.bits.itsm.auth.AllowedRoles;
@@ -12,6 +13,7 @@ import edu.bits.itsm.auth.UserAccount;
 import edu.bits.itsm.domain.Feedback;
 import edu.bits.itsm.domain.Incident;
 import edu.bits.itsm.domain.InvestigationNote;
+import edu.bits.itsm.domain.Technician;
 import edu.bits.itsm.service.IncidentService;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -64,6 +66,37 @@ public class IncidentNoteController {
         }
 
         incidentService.giveFeedback(id, new Feedback(request.rating(), request.comment()));
+        return IncidentResponse.from(incidentService.getIncident(id));
+    }
+
+    // The assigned technician (or an admin) asks the reporter for more information
+    @PostMapping("/request-info")
+    @AllowedRoles({Role.TECHNICIAN, Role.ADMIN})
+    public IncidentResponse requestInfo(@PathVariable String id,
+                                        @RequestBody InfoMessageRequest request) {
+        UserAccount user = CurrentUser.get();
+        Incident incident = incidentService.getIncident(id);
+        if (user.role != Role.ADMIN) {
+            Technician assigned = incident.getAssignedTechnician();
+            if (assigned == null || !assigned.getId().equals(user.id)) {
+                throw new ForbiddenException("This incident is not assigned to you");
+            }
+        }
+        incidentService.requestInformation(id, new NoteAuthor(user), request.message());
+        return IncidentResponse.from(incidentService.getIncident(id));
+    }
+
+    // The reporter (or an admin) answers the question
+    @PostMapping("/provide-info")
+    @AllowedRoles({Role.EMPLOYEE, Role.ADMIN})
+    public IncidentResponse provideInfo(@PathVariable String id,
+                                        @RequestBody InfoMessageRequest request) {
+        UserAccount user = CurrentUser.get();
+        Incident incident = incidentService.getIncident(id);
+        if (user.role != Role.ADMIN && !incident.getReporter().getId().equals(user.id)) {
+            throw new ForbiddenException("Only the person who reported this incident can answer");
+        }
+        incidentService.provideInformation(id, new NoteAuthor(user), request.message());
         return IncidentResponse.from(incidentService.getIncident(id));
     }
 

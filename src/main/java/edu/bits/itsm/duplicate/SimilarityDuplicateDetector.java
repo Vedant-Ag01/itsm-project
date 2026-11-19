@@ -1,4 +1,5 @@
 package edu.bits.itsm.duplicate;
+import edu.bits.itsm.domain.IncidentStatus;
 
 import edu.bits.itsm.domain.Incident;
 

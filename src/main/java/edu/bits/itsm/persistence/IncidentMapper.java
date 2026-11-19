@@ -4,6 +4,7 @@ import edu.bits.itsm.domain.Employee;
 import edu.bits.itsm.domain.Feedback;
 import edu.bits.itsm.domain.Incident;
 import edu.bits.itsm.domain.InvestigationNote;
+import edu.bits.itsm.domain.NoteType;
 import edu.bits.itsm.domain.ItService;
 import edu.bits.itsm.domain.Technician;
 import edu.bits.itsm.domain.User;
@@ -69,6 +70,7 @@ public class IncidentMapper {
             data.authorRole = note.getAuthor().getRoleName();
             data.noteText = note.getText();
             data.createdAt = note.getCreatedAt();
+            data.noteType = note.getType().name();
             entity.notes.add(data);
         }
 
@@ -96,7 +98,8 @@ public class IncidentMapper {
         for (NoteData data : entity.notes) {
             User author = new SavedUser(data.authorId, data.authorName,
                     data.authorEmail, data.authorRole);
-            notes.add(InvestigationNote.restore(author, data.noteText, data.createdAt));
+            NoteType type = data.noteType == null ? NoteType.NOTE : NoteType.valueOf(data.noteType);
+            notes.add(InvestigationNote.restore(author, data.noteText, data.createdAt, type));
         }
 
         return Incident.restore(entity.id, reporter, entity.title, entity.description,

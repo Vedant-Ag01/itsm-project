@@ -28,4 +28,13 @@ public class UserAccount {
     // the password is never stored, only a salted hash of it
     public String passwordSalt;
     public String passwordHash;
+
+    // false = the account is switched off and cannot log in.
+    // It is a nullable Boolean so rows that existed before this column was added
+    // (value null) simply count as active.
+    public Boolean active = true;
+
+    public boolean isActive() {
+        return active == null || active;
+    }
 }

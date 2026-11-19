@@ -7,10 +7,11 @@ public record UserResponse(
         String name,
         String email,
         String department,
-        String role) {
+        String role,
+        boolean active) {
 
     public static UserResponse from(UserAccount account) {
         return new UserResponse(account.id, account.name, account.email,
-                account.department, account.role.name());
+                account.department, account.role.name(), account.isActive());
     }
 }

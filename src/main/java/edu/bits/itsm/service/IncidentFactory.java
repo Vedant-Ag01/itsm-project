@@ -19,6 +19,7 @@ public class IncidentFactory {
     public Incident create(Employee reporter, String title, String description,
                            ItService service, Impact impact, Urgency urgency,
                            int affectedUsers) {
+        Incident.checkFieldSizes(title, description, affectedUsers);
         String id = repository.nextId();
         return new Incident(id, reporter, title, description,
                 service, impact, urgency, affectedUsers);
