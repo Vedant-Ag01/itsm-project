@@ -35,3 +35,4 @@ public class KeywordCategoryClassifierTest {
     void testHandlesNullAndBlankInputsSafely() {
         assertTrue(classifier.suggest(null, "   ").isEmpty());
     }
+}

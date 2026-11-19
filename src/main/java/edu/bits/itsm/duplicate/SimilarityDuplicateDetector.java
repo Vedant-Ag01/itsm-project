@@ -35,7 +35,7 @@ public class SimilarityDuplicateDetector implements DuplicateDetector {
 
         for (Incident candidate : existing) {
             // Ignore closed incidents or comparing incident against itself
-            if ("CLOSED".equalsIgnoreCase(candidate.getStatus()) || candidate.getId().equals(incoming.getId())) {
+            if ("CLOSED".equalsIgnoreCase(String.valueOf(candidate.getStatus())) || candidate.getId().equals(incoming.getId())) {
                 continue;
             }
 
