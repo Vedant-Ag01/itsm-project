@@ -1,0 +1,11 @@
+.registration-panel { width: min(100%, 480px); }
+.registration-panel h1 { margin-bottom: 8px; }
+.registration-panel .detail-form { gap: 14px; }
+.registration-panel input[aria-invalid="true"] { border: 2px solid var(--accent-text, #b94715); }
+.field-error { font-size: 13px; color: var(--text-primary); }
+.registration-panel :focus-visible { outline: 2px solid var(--focus-ring, #a63c10); outline-offset: 3px; }
+.registration-panel [tabindex="-1"]:focus { outline: none; }
+.registration-panel .primary-button { justify-content: center; }
+@media (max-width: 600px) {
+  .registration-panel { padding: 20px; }
+}

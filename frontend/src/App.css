@@ -996,3 +996,7 @@ h1 {
     grid-template-columns: minmax(0, 1fr);
   }
 }
+
+.workload-row { display: flex; align-items: center; gap: 16px; margin-top: 20px; }
+.workload-row progress { flex: 1; min-width: 0; accent-color: var(--action); height: 16px; }
+.incident-detail-grid { margin-top: 24px; }

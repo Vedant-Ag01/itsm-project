@@ -254,8 +254,7 @@ export default function EmployeeOverview() {
     <>
       <div className="page-heading">
         <div>
-          <p className="eyebrow">Overview</p>
-          <h1>Your workspace</h1>
+          <h1>Overview</h1>
           <p className="subtitle">Report issues. Track progress.</p>
         </div>
 
@@ -264,24 +263,16 @@ export default function EmployeeOverview() {
         </Link>
       </div>
 
-      <div className="data-notice">
-        {USING_MOCKS
-          ? 'Demo data · These incidents are examples, not live records.'
-          : 'Connected to the incident API.'}
-      </div>
+      {USING_MOCKS && <div className="data-notice">Demo data · These incidents are examples, not live records.</div>}
 
       <div className="stats-grid">
-        {metrics.map((metric) => (
+        {metrics.map((metric, index) => (
           <section className="stat-card" key={metric.label}>
-            <h2>{metric.label}</h2>
+            <span className={`metric-icon metric-icon--${index}`} aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round">{index === 0 ? <><rect x="4" y="3" width="16" height="18" rx="3"/><path d="M8 8h8M8 12h8M8 16h5"/></> : index === 1 ? <><path d="M20 8a8 8 0 1 0 0 8M20 3v5h-5"/></> : index === 2 ? <><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></> : <><circle cx="12" cy="12" r="9"/><path d="m7 12 3 3 7-7"/></>}</svg></span><h2>{metric.label}</h2>
             <div className="stat-value">
               {isReady ? metric.count : '—'}
             </div>
-            <p>
-              {isReady
-                ? 'Across your loaded incidents'
-                : 'Data not available yet'}
-            </p>
+            
           </section>
         ))}
       </div>

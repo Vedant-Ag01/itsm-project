@@ -1,0 +1,99 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!DOCTYPE svg
+  PUBLIC '-//W3C//DTD SVG 1.0//EN'
+  'http://www.w3.org/TR/2001/REC-SVG-20010904/DTD/svg10.dtd'>
+<svg width="510" height="625" preserveAspectRatio="xMinYMin meet" viewBox="0 0 510 625" xmlns="http://www.w3.org/2000/svg" version="1.0" fill-rule="evenodd" xmlns:xlink="http://www.w3.org/1999/xlink">
+	<title>...</title>
+	<desc>...</desc>
+	<clipPath id="clip">
+		<rect x="0" y="0" width="510" height="625"/>
+	</clipPath>
+	<g id="group" transform="scale(1,-1) translate(0,-625)" style="clip-path: url(#clip)">
+		<g transform="">
+			<rect x="115" y="30" width="390" height="560" style="stroke: rgb(33%,33%,33%); stroke-linecap: butt; stroke-width: 1; fill: none; fill-rule: evenodd;"/>
+			<text x="209.324951171875" y="605" style="font-family: DejaVu-Bold; font-size: 15px;fill: rgb(0%,0%,0%); stroke:none;" transform="translate(0,1210) scale(1,-1)">I-ITSM - use-case model</text>
+			<text x="270.34814453125" y="575" style="font-family: DejaVu; font-size: 9px;fill: rgb(0%,0%,0%); stroke:none;" transform="translate(0,1150) scale(1,-1)">System boundary</text>
+			<circle cx="45" cy="553" r="7" style="stroke: rgb(0%,0%,0%); stroke-linecap: butt; stroke-width: 1; fill: none; fill-rule: evenodd;"/>
+			<path d="M 45,546 L 45,524 Z" style="stroke: rgb(0%,0%,0%); stroke-linecap: butt; stroke-width: 1;"/>
+			<path d="M 30,537 L 60,537 Z" style="stroke: rgb(0%,0%,0%); stroke-linecap: butt; stroke-width: 1;"/>
+			<path d="M 45,524 L 31,507 Z" style="stroke: rgb(0%,0%,0%); stroke-linecap: butt; stroke-width: 1;"/>
+			<path d="M 45,524 L 59,507 Z" style="stroke: rgb(0%,0%,0%); stroke-linecap: butt; stroke-width: 1;"/>
+			<text x="30.708984375" y="491" style="font-family: DejaVu; font-size: 9px;fill: rgb(0%,0%,0%); stroke:none;" transform="translate(0,982) scale(1,-1)">Visitor</text>
+			<path d="M 64,537 L 133,542 Z" style="stroke: rgb(53%,53%,53%); stroke-linecap: butt; stroke-width: 0.65;"/>
+			<ellipse cx="217.0" cy="542.0" rx="84.0" ry="20.0" style="stroke: rgb(26%,26%,26%); stroke-linecap: butt; stroke-width: 0.8; fill: rgb(100%,100%,100%); fill-rule: evenodd;"/>
+			<text x="176.98193359375" y="539" style="font-family: DejaVu; font-size: 8.5px;fill: rgb(0%,0%,0%); stroke:none;" transform="translate(0,1078) scale(1,-1)">Register employee</text>
+			<path d="M 64,537 L 105,569 Z" style="stroke: rgb(53%,53%,53%); stroke-linecap: butt; stroke-width: 0.65;"/>
+			<path d="M 105,569 L 407,569 Z" style="stroke: rgb(53%,53%,53%); stroke-linecap: butt; stroke-width: 0.65;"/>
+			<path d="M 407,569 L 407,562 Z" style="stroke: rgb(53%,53%,53%); stroke-linecap: butt; stroke-width: 0.65;"/>
+			<ellipse cx="407.0" cy="542.0" rx="84.0" ry="20.0" style="stroke: rgb(26%,26%,26%); stroke-linecap: butt; stroke-width: 0.8; fill: rgb(100%,100%,100%); fill-rule: evenodd;"/>
+			<text x="392.5047607421875" y="539" style="font-family: DejaVu; font-size: 8.5px;fill: rgb(0%,0%,0%); stroke:none;" transform="translate(0,1078) scale(1,-1)">Sign in</text>
+			<circle cx="45" cy="441" r="7" style="stroke: rgb(0%,0%,0%); stroke-linecap: butt; stroke-width: 1; fill: none; fill-rule: evenodd;"/>
+			<path d="M 45,434 L 45,412 Z" style="stroke: rgb(0%,0%,0%); stroke-linecap: butt; stroke-width: 1;"/>
+			<path d="M 30,425 L 60,425 Z" style="stroke: rgb(0%,0%,0%); stroke-linecap: butt; stroke-width: 1;"/>
+			<path d="M 45,412 L 31,395 Z" style="stroke: rgb(0%,0%,0%); stroke-linecap: butt; stroke-width: 1;"/>
+			<path d="M 45,412 L 59,395 Z" style="stroke: rgb(0%,0%,0%); stroke-linecap: butt; stroke-width: 1;"/>
+			<text x="22.713134765624996" y="379" style="font-family: DejaVu; font-size: 9px;fill: rgb(0%,0%,0%); stroke:none;" transform="translate(0,758) scale(1,-1)">Employee</text>
+			<path d="M 64,425 L 133,430 Z" style="stroke: rgb(53%,53%,53%); stroke-linecap: butt; stroke-width: 0.65;"/>
+			<ellipse cx="217.0" cy="430.0" rx="84.0" ry="20.0" style="stroke: rgb(26%,26%,26%); stroke-linecap: butt; stroke-width: 0.8; fill: rgb(100%,100%,100%); fill-rule: evenodd;"/>
+			<text x="184.3052978515625" y="427" style="font-family: DejaVu; font-size: 8.5px;fill: rgb(0%,0%,0%); stroke:none;" transform="translate(0,854) scale(1,-1)">Report incident</text>
+			<path d="M 64,425 L 105,457 Z" style="stroke: rgb(53%,53%,53%); stroke-linecap: butt; stroke-width: 0.65;"/>
+			<path d="M 105,457 L 407,457 Z" style="stroke: rgb(53%,53%,53%); stroke-linecap: butt; stroke-width: 0.65;"/>
+			<path d="M 407,457 L 407,450 Z" style="stroke: rgb(53%,53%,53%); stroke-linecap: butt; stroke-width: 0.65;"/>
+			<ellipse cx="407.0" cy="430.0" rx="84.0" ry="20.0" style="stroke: rgb(26%,26%,26%); stroke-linecap: butt; stroke-width: 0.8; fill: rgb(100%,100%,100%); fill-rule: evenodd;"/>
+			<text x="364.504150390625" y="427" style="font-family: DejaVu; font-size: 8.5px;fill: rgb(0%,0%,0%); stroke:none;" transform="translate(0,854) scale(1,-1)">Track own incidents</text>
+			<path d="M 64,425 L 133,373 Z" style="stroke: rgb(53%,53%,53%); stroke-linecap: butt; stroke-width: 0.65;"/>
+			<ellipse cx="217.0" cy="373.0" rx="84.0" ry="20.0" style="stroke: rgb(26%,26%,26%); stroke-linecap: butt; stroke-width: 0.8; fill: rgb(100%,100%,100%); fill-rule: evenodd;"/>
+			<text x="175.126708984375" y="370" style="font-family: DejaVu; font-size: 8.5px;fill: rgb(0%,0%,0%); stroke:none;" transform="translate(0,740) scale(1,-1)">Provide information</text>
+			<path d="M 64,425 L 105,400 Z" style="stroke: rgb(53%,53%,53%); stroke-linecap: butt; stroke-width: 0.65;"/>
+			<path d="M 105,400 L 407,400 Z" style="stroke: rgb(53%,53%,53%); stroke-linecap: butt; stroke-width: 0.65;"/>
+			<path d="M 407,400 L 407,393 Z" style="stroke: rgb(53%,53%,53%); stroke-linecap: butt; stroke-width: 0.65;"/>
+			<ellipse cx="407.0" cy="373.0" rx="84.0" ry="20.0" style="stroke: rgb(26%,26%,26%); stroke-linecap: butt; stroke-width: 0.8; fill: rgb(100%,100%,100%); fill-rule: evenodd;"/>
+			<text x="360.5218505859375" y="370" style="font-family: DejaVu; font-size: 8.5px;fill: rgb(0%,0%,0%); stroke:none;" transform="translate(0,740) scale(1,-1)">Verify / give feedback</text>
+			<circle cx="45" cy="290" r="7" style="stroke: rgb(0%,0%,0%); stroke-linecap: butt; stroke-width: 1; fill: none; fill-rule: evenodd;"/>
+			<path d="M 45,283 L 45,261 Z" style="stroke: rgb(0%,0%,0%); stroke-linecap: butt; stroke-width: 1;"/>
+			<path d="M 30,274 L 60,274 Z" style="stroke: rgb(0%,0%,0%); stroke-linecap: butt; stroke-width: 1;"/>
+			<path d="M 45,261 L 31,244 Z" style="stroke: rgb(0%,0%,0%); stroke-linecap: butt; stroke-width: 1;"/>
+			<path d="M 45,261 L 59,244 Z" style="stroke: rgb(0%,0%,0%); stroke-linecap: butt; stroke-width: 1;"/>
+			<text x="20.720214843749996" y="228" style="font-family: DejaVu; font-size: 9px;fill: rgb(0%,0%,0%); stroke:none;" transform="translate(0,456) scale(1,-1)">Technician</text>
+			<path d="M 64,274 L 133,279 Z" style="stroke: rgb(53%,53%,53%); stroke-linecap: butt; stroke-width: 0.65;"/>
+			<ellipse cx="217.0" cy="279.0" rx="84.0" ry="20.0" style="stroke: rgb(26%,26%,26%); stroke-linecap: butt; stroke-width: 0.8; fill: rgb(100%,100%,100%); fill-rule: evenodd;"/>
+			<text x="171.6839599609375" y="276" style="font-family: DejaVu; font-size: 8.5px;fill: rgb(0%,0%,0%); stroke:none;" transform="translate(0,552) scale(1,-1)">View work / workload</text>
+			<path d="M 64,274 L 105,306 Z" style="stroke: rgb(53%,53%,53%); stroke-linecap: butt; stroke-width: 0.65;"/>
+			<path d="M 105,306 L 407,306 Z" style="stroke: rgb(53%,53%,53%); stroke-linecap: butt; stroke-width: 0.65;"/>
+			<path d="M 407,306 L 407,299 Z" style="stroke: rgb(53%,53%,53%); stroke-linecap: butt; stroke-width: 0.65;"/>
+			<ellipse cx="407.0" cy="279.0" rx="84.0" ry="20.0" style="stroke: rgb(26%,26%,26%); stroke-linecap: butt; stroke-width: 0.8; fill: rgb(100%,100%,100%); fill-rule: evenodd;"/>
+			<text x="364.686767578125" y="276" style="font-family: DejaVu; font-size: 8.5px;fill: rgb(0%,0%,0%); stroke:none;" transform="translate(0,552) scale(1,-1)">Acknowledge / start</text>
+			<path d="M 64,274 L 133,222 Z" style="stroke: rgb(53%,53%,53%); stroke-linecap: butt; stroke-width: 0.65;"/>
+			<ellipse cx="217.0" cy="222.0" rx="84.0" ry="20.0" style="stroke: rgb(26%,26%,26%); stroke-linecap: butt; stroke-width: 0.8; fill: rgb(100%,100%,100%); fill-rule: evenodd;"/>
+			<text x="168.004638671875" y="219" style="font-family: DejaVu; font-size: 8.5px;fill: rgb(0%,0%,0%); stroke:none;" transform="translate(0,438) scale(1,-1)">Investigate / add notes</text>
+			<path d="M 64,274 L 105,249 Z" style="stroke: rgb(53%,53%,53%); stroke-linecap: butt; stroke-width: 0.65;"/>
+			<path d="M 105,249 L 407,249 Z" style="stroke: rgb(53%,53%,53%); stroke-linecap: butt; stroke-width: 0.65;"/>
+			<path d="M 407,249 L 407,242 Z" style="stroke: rgb(53%,53%,53%); stroke-linecap: butt; stroke-width: 0.65;"/>
+			<ellipse cx="407.0" cy="222.0" rx="84.0" ry="20.0" style="stroke: rgb(26%,26%,26%); stroke-linecap: butt; stroke-width: 0.8; fill: rgb(100%,100%,100%); fill-rule: evenodd;"/>
+			<text x="360.602783203125" y="219" style="font-family: DejaVu; font-size: 8.5px;fill: rgb(0%,0%,0%); stroke:none;" transform="translate(0,438) scale(1,-1)">Request info / resolve</text>
+			<circle cx="45" cy="139" r="7" style="stroke: rgb(0%,0%,0%); stroke-linecap: butt; stroke-width: 1; fill: none; fill-rule: evenodd;"/>
+			<path d="M 45,132 L 45,110 Z" style="stroke: rgb(0%,0%,0%); stroke-linecap: butt; stroke-width: 1;"/>
+			<path d="M 30,123 L 60,123 Z" style="stroke: rgb(0%,0%,0%); stroke-linecap: butt; stroke-width: 1;"/>
+			<path d="M 45,110 L 31,93 Z" style="stroke: rgb(0%,0%,0%); stroke-linecap: butt; stroke-width: 1;"/>
+			<path d="M 45,110 L 59,93 Z" style="stroke: rgb(0%,0%,0%); stroke-linecap: butt; stroke-width: 1;"/>
+			<text x="14.244873046874996" y="77" style="font-family: DejaVu; font-size: 9px;fill: rgb(0%,0%,0%); stroke:none;" transform="translate(0,154) scale(1,-1)">Administrator</text>
+			<path d="M 64,123 L 133,128 Z" style="stroke: rgb(53%,53%,53%); stroke-linecap: butt; stroke-width: 0.65;"/>
+			<ellipse cx="217.0" cy="128.0" rx="84.0" ry="20.0" style="stroke: rgb(26%,26%,26%); stroke-linecap: butt; stroke-width: 0.8; fill: rgb(100%,100%,100%); fill-rule: evenodd;"/>
+			<text x="165.7115478515625" y="125" style="font-family: DejaVu; font-size: 8.5px;fill: rgb(0%,0%,0%); stroke:none;" transform="translate(0,250) scale(1,-1)">Manage users / services</text>
+			<path d="M 64,123 L 105,155 Z" style="stroke: rgb(53%,53%,53%); stroke-linecap: butt; stroke-width: 0.65;"/>
+			<path d="M 105,155 L 407,155 Z" style="stroke: rgb(53%,53%,53%); stroke-linecap: butt; stroke-width: 0.65;"/>
+			<path d="M 407,155 L 407,148 Z" style="stroke: rgb(53%,53%,53%); stroke-linecap: butt; stroke-width: 0.65;"/>
+			<ellipse cx="407.0" cy="128.0" rx="84.0" ry="20.0" style="stroke: rgb(26%,26%,26%); stroke-linecap: butt; stroke-width: 0.8; fill: rgb(100%,100%,100%); fill-rule: evenodd;"/>
+			<text x="368.9512939453125" y="125" style="font-family: DejaVu; font-size: 8.5px;fill: rgb(0%,0%,0%); stroke:none;" transform="translate(0,250) scale(1,-1)">Configure policies</text>
+			<path d="M 64,123 L 133,71 Z" style="stroke: rgb(53%,53%,53%); stroke-linecap: butt; stroke-width: 0.65;"/>
+			<ellipse cx="217.0" cy="71.0" rx="84.0" ry="20.0" style="stroke: rgb(26%,26%,26%); stroke-linecap: butt; stroke-width: 0.8; fill: rgb(100%,100%,100%); fill-rule: evenodd;"/>
+			<text x="169.5963134765625" y="68" style="font-family: DejaVu; font-size: 8.5px;fill: rgb(0%,0%,0%); stroke:none;" transform="translate(0,136) scale(1,-1)">Assign / close incident</text>
+			<path d="M 64,123 L 105,98 Z" style="stroke: rgb(53%,53%,53%); stroke-linecap: butt; stroke-width: 0.65;"/>
+			<path d="M 105,98 L 407,98 Z" style="stroke: rgb(53%,53%,53%); stroke-linecap: butt; stroke-width: 0.65;"/>
+			<path d="M 407,98 L 407,91 Z" style="stroke: rgb(53%,53%,53%); stroke-linecap: butt; stroke-width: 0.65;"/>
+			<ellipse cx="407.0" cy="71.0" rx="84.0" ry="20.0" style="stroke: rgb(26%,26%,26%); stroke-linecap: butt; stroke-width: 0.8; fill: rgb(100%,100%,100%); fill-rule: evenodd;"/>
+			<text x="365.20556640625" y="68" style="font-family: DejaVu; font-size: 8.5px;fill: rgb(0%,0%,0%); stroke:none;" transform="translate(0,136) scale(1,-1)">View reports / audit</text>
+			<text x="128.572" y="12" style="font-family: Times-Roman; font-size: 8px;fill: rgb(0%,0%,0%); stroke:none;" transform="translate(0,24) scale(1,-1)">Associations show intended permissions; backend checks remain authoritative.</text>
+		</g>
+	</g>
+</svg>

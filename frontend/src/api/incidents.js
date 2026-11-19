@@ -106,7 +106,8 @@ export async function addIncidentNote(id, text) {
     return addMockNote(id, text)
   }
 
-  throw new ApiError('Adding notes is not available yet.', 501)
+  const notes = await apiRequest(`${incidentPath(id)}/notes`, { method: 'POST', body: { text } })
+  return { notes: notes.map((entry) => ({ ...entry, author: entry.authorName })) }
 }
 
 export async function verifyIncident(id) {
@@ -122,7 +123,9 @@ export async function submitIncidentFeedback(id, rating, comment) {
     return submitMockFeedback(id, rating, comment)
   }
 
-  throw new ApiError('Feedback is not available yet.', 501)
+  return normalizeIncident(await apiRequest(`${incidentPath(id)}/feedback`, {
+    method: 'POST', body: { rating, comment },
+  }))
 }
 
 export async function getReportServices() {
@@ -152,7 +155,21 @@ function normalizeIncident(row) {
     service: { name: row.serviceName },
     reporter: { name: row.reporterName },
     assignedTechnician: row.assignedTechnician ? { name: row.assignedTechnician } : null,
-    impact: 'Not available', urgency: 'Not available', slaStatus: null,
-    notes: [], feedback: null,
+    slaStatus: row.slaStatus ?? null,
+    feedback: row.feedbackRating == null ? null : { rating: row.feedbackRating, comment: row.feedbackComment },
   }
+}
+
+export async function getIncidentNotes(id, { signal } = {}) {
+  if (USING_MOCKS) return (await getMockIncident(id)).notes
+  const notes = await apiRequest(`${incidentPath(id)}/notes`, { signal })
+  return notes.map((entry) => ({ ...entry, author: entry.authorName }))
+}
+
+export async function technicianAction(id, action, note) {
+  if (USING_MOCKS) throw new ApiError('Technician actions require live mode.', 501)
+  if (!['acknowledge', 'start-work', 'resolve'].includes(action)) throw new Error('Unknown action.')
+  return normalizeIncident(await apiRequest(`${incidentPath(id)}/${action}`, {
+    method: 'POST', ...(action === 'resolve' ? { body: { note } } : {}),
+  }))
 }

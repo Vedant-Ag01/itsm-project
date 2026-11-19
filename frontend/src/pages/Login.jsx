@@ -1,10 +1,11 @@
-import { useRef, useState } from 'react'
 import { Link } from 'react-router'
+import { useEffect, useRef, useState } from 'react'
 import { signIn } from '../auth/session'
 import { USING_MOCKS } from '../api/incidents'
 import ThemeToggle from '../components/ThemeToggle'
 
 export default function Login({ theme, onToggle }) {
+  useEffect(() => { document.title = 'Sign in · I-ITSM' }, [])
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [busy, setBusy] = useState(false)

@@ -1,0 +1,39 @@
+@startuml
+left to right direction
+skinparam monochrome true
+skinparam shadowing false
+actor "Visitor" as Visitor
+actor "Employee" as Employee
+actor "Technician" as Technician
+actor "Administrator" as Administrator
+rectangle "I-ITSM" {
+usecase "Register employee" as REG
+usecase "Sign in" as LOGIN
+usecase "Report incident" as REPORT
+usecase "Track own incidents" as TRACK
+usecase "Provide information" as INFO
+usecase "Verify / give feedback" as VERIFY
+usecase "View work / workload" as WORK
+usecase "Acknowledge / start" as ACK
+usecase "Investigate / add notes" as NOTES
+usecase "Request info / resolve" as RESOLVE
+usecase "Manage users / services" as MANAGE
+usecase "Configure policies" as POLICY
+usecase "Assign / close incident" as CLOSE
+usecase "View reports / audit" as AUDIT
+}
+Visitor -- REG
+Visitor -- LOGIN
+Employee -- REPORT
+Employee -- TRACK
+Employee -- INFO
+Employee -- VERIFY
+Technician -- WORK
+Technician -- ACK
+Technician -- NOTES
+Technician -- RESOLVE
+Administrator -- MANAGE
+Administrator -- POLICY
+Administrator -- CLOSE
+Administrator -- AUDIT
+@enduml
