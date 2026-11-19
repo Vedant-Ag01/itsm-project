@@ -1,94 +1,96 @@
 import { useEffect, useState } from 'react'
-import { Link } from 'react-router'
-import { getIncidents } from '../../api/incidents'
-import { useSession } from '../../auth/session'
+import { getNotifications, markAllNotificationsRead, markNotificationRead } from '../../api/c7'
 import Card from '../../components/Card'
 
-function readSeen(key) {
-  try {
-    const value = JSON.parse(localStorage.getItem(key))
-    return Array.isArray(value) ? value : []
-  } catch {
-    return []
-  }
-}
-
 export default function Notifications() {
-  const { user } = useSession()
-  const key = `itsm-seen-resolutions:${user.userId}`
-  const [seen, setSeen] = useState(() => readSeen(key))
-  const [result, setResult] = useState(null)
+  const [data, setData] = useState({ unread: 0, notifications: [] })
+  const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
-  const [attempt, setAttempt] = useState(0)
 
-  useEffect(() => {
-    const controller = new AbortController()
-    getIncidents({}, { signal: controller.signal })
-      .then(({ items }) => {
-        if (!controller.signal.aborted) setResult(items)
-      })
-      .catch((failure) => {
-        if (!controller.signal.aborted) setError(failure.message)
-      })
-    return () => controller.abort()
-  }, [attempt])
-
-  function markRead(id) {
-    const updated = [...seen, id]
-    setSeen(updated)
+  async function load(signal) {
+    setLoading(true)
+    setError('')
     try {
-      localStorage.setItem(key, JSON.stringify(updated))
-    } catch {
-      // Keep the read status for the current visit.
+      const res = await getNotifications({ signal })
+      if (!signal?.aborted) setData(res)
+    } catch (err) {
+      if (!signal?.aborted) setError(err.message)
+    } finally {
+      if (!signal?.aborted) setLoading(false)
     }
   }
 
-  const resolutions = (result ?? [])
-    .filter(({ resolvedAt }) => resolvedAt)
-    .sort((a, b) => new Date(b.resolvedAt) - new Date(a.resolvedAt))
+  useEffect(() => {
+    const controller = new AbortController()
+    load(controller.signal)
+    return () => controller.abort()
+  }, [])
+
+  async function handleRead(id) {
+    await markNotificationRead(id)
+    setData((prev) => ({
+      unread: Math.max(0, prev.unread - 1),
+      notifications: prev.notifications.map((n) => (n.id === id ? { ...n, read: true } : n)),
+    }))
+  }
+
+  async function handleReadAll() {
+    await markAllNotificationsRead()
+    setData((prev) => ({
+      unread: 0,
+      notifications: prev.notifications.map((n) => ({ ...n, read: true })),
+    }))
+  }
 
   return (
-    <>
-      <div className="page-heading"><h1>Notifications</h1></div>
-      <Card title="Resolution updates">
-        <p className="subtitle">Read status is saved in this browser.</p>
-        {error ? (
-          <>
-            <p role="alert">{error}</p>
-            <button className="secondary-button" onClick={() => {
-              setError('')
-              setAttempt((value) => value + 1)
-            }}>Try again</button>
-          </>
-        ) : !result ? (
-          <p role="status">Loading resolution updates…</p>
-        ) : resolutions.length === 0 ? (
-          <p>No resolutions to show yet.</p>
-        ) : (
-          <ul className="attention-list">
-            {resolutions.map((incident) => {
-              const id = `${incident.id}:${incident.resolvedAt}`
-              return (
-                <li key={id}>
-                  <div>
-                    <span className="incident-id">{incident.id}</span>
-                    <h3>{incident.title}</h3>
-                    <p>Resolved <time dateTime={incident.resolvedAt}>
-                      {new Date(incident.resolvedAt).toLocaleString('en-IN')}
-                    </time></p>
-                    <Link className="incident-link" to={`/employee/incidents/${encodeURIComponent(incident.id)}`}>
-                      View incident
-                    </Link>
-                  </div>
-                  {seen.includes(id) ? <span>Read</span> : (
-                    <button className="secondary-button" onClick={() => markRead(id)}>Mark as read</button>
-                  )}
-                </li>
-              )
-            })}
-          </ul>
-        )}
-      </Card>
-    </>
+    <Card
+      title={`Notifications (${data.unread} unread)`}
+      subtitle="Alerts for incident assignments, status transitions, info requests, and SLA warnings."
+    >
+      {data.unread > 0 && (
+        <div style={{ marginBottom: '1rem' }}>
+          <button type="button" className="secondary-button" onClick={handleReadAll}>
+            Mark all as read
+          </button>
+        </div>
+      )}
+
+      {error && <p role="alert">{error}</p>}
+      {loading ? (
+        <p>Loading notifications…</p>
+      ) : data.notifications.length === 0 ? (
+        <div className="empty-state">
+          <h3>No notifications yet</h3>
+          <p>You will see alerts here when your incidents are updated.</p>
+        </div>
+      ) : (
+        <ul style={{ listStyle: 'none', padding: 0, display: 'grid', gap: '0.75rem' }}>
+          {data.notifications.map((n) => (
+            <li
+              key={n.id}
+              className="panel"
+              style={{
+                display: 'flex',
+                justifyContent: 'space-between',
+                alignItems: 'center',
+                gap: '1rem',
+                opacity: n.read ? 0.7 : 1,
+              }}
+            >
+              <div>
+                <strong>{n.subject}</strong>
+                <p style={{ margin: '0.25rem 0' }}>{n.message}</p>
+                <small>{n.createdAt}</small>
+              </div>
+              {!n.read && (
+                <button type="button" className="secondary-button" onClick={() => handleRead(n.id)}>
+                  Mark read
+                </button>
+              )}
+            </li>
+          ))}
+        </ul>
+      )}
+    </Card>
   )
 }

@@ -52,13 +52,40 @@ export async function signIn(email, password) {
   remember(USING_MOCKS ? JSON.stringify(user) : user.token)
   publish({ phase: 'ready', user, error: '' })
 }
+export async function registerEmployee({ name, email, department, password }) {
+  let user
+  if (USING_MOCKS) {
+    user = {
+      userId: 'E-' + Date.now(),
+      name: name.trim(),
+      email: email.trim().toLowerCase(),
+      role: 'EMPLOYEE',
+      department: department.trim(),
+    }
+  } else {
+    user = await apiRequest('/auth/register', {
+      method: 'POST',
+      body: {
+        name: name.trim(),
+        email: email.trim(),
+        department: department.trim(),
+        password,
+      },
+    })
+    if (!valid(user) || !user.token) {
+      throw new Error('The server returned an invalid registration response.')
+    }
+    setAuthToken(user.token)
+  }
+  remember(USING_MOCKS ? JSON.stringify(user) : user.token)
+  publish({ phase: 'ready', user, error: '' })
+}
 export async function signOut() {
   if (!USING_MOCKS) {
     try { await apiRequest('/auth/logout', { method: 'POST' }) }
     catch (error) { if (error.status !== 401) throw error }
   }
   clearSession()
-  // Refresh also clears the in-memory demo incident store.
   window.location.assign('/login')
 }
 window.addEventListener('itsm-session-expired', clearSession)
