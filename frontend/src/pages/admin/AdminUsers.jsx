@@ -74,7 +74,7 @@ export default function AdminUsers() {
           </div>
           <button className="primary-button" disabled={busy}>Create account</button>
         </form>
-        <p className="report-help">Technicians are managed on the Technicians page.</p>
+        <p className="report-help">Technician accounts need skills for assignment, so add them from the Technicians page.</p>
       </Card>
 
       <Card title="All users">

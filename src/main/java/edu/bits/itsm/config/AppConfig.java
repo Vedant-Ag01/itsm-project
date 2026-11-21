@@ -3,6 +3,9 @@ package edu.bits.itsm.config;
 import edu.bits.itsm.assignment.SkillBasedStrategy;
 import edu.bits.itsm.audit.AuditLogObserver;
 import edu.bits.itsm.audit.AuditRepository;
+import edu.bits.itsm.auth.Role;
+import edu.bits.itsm.auth.UserAccount;
+import edu.bits.itsm.auth.UserAccountTable;
 import edu.bits.itsm.domain.IncidentCategory;
 import edu.bits.itsm.domain.Technician;
 import edu.bits.itsm.duplicate.SimilarityDuplicateDetector;
@@ -30,13 +33,15 @@ import org.springframework.context.annotation.Configuration;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.CopyOnWriteArrayList;
 
 @Configuration
 public class AppConfig {
 
     @Bean
-    public List<Technician> technicians() {
-        List<Technician> list = new ArrayList<>();
+    public List<Technician> technicians(UserAccountTable users) {
+        // admins can add technicians while the app runs, so the list must be safe to change
+        List<Technician> list = new CopyOnWriteArrayList<>();
 
         Technician ravi = new Technician("T1", "Ravi", "ravi@bits.edu");
         ravi.addSkill(IncidentCategory.NETWORK);
@@ -54,6 +59,18 @@ public class AppConfig {
 
         list.add(ravi);
         list.add(meera);
+
+        // Technicians an admin created earlier are saved in the database with their skills
+        for (UserAccount account : users.findAll()) {
+            if (account.role != Role.TECHNICIAN || account.skills == null) {
+                continue;
+            }
+            Technician technician = new Technician(account.id, account.name, account.email);
+            for (String skill : account.skills.split(",")) {
+                technician.addSkill(IncidentCategory.valueOf(skill.trim()));
+            }
+            list.add(technician);
+        }
         return list;
     }
 

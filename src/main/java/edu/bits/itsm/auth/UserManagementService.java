@@ -25,7 +25,7 @@ public class UserManagementService {
     }
 
     // An admin can create EMPLOYEE or ADMIN accounts.
-    // (Technicians are set up in AppConfig because the assignment rules need their skills.)
+    // Technicians have their own method below because they need skills.
     public UserAccount createByAdmin(String name, String email, String department,
                                      String password, Role role) {
         if (role == null) {
@@ -33,10 +33,21 @@ public class UserManagementService {
         }
         if (role == Role.TECHNICIAN) {
             throw new IllegalArgumentException(
-                    "Technician accounts need skills and are set up by the development team, "
-                            + "not through this screen");
+                    "Technician accounts need skills, so create them from the Technicians page");
         }
         return create(name, email, department, password, role);
+    }
+
+    // Creates a technician login. The skills are kept as plain text (for example
+    // "NETWORK,HARDWARE") so they are still there after a restart.
+    public UserAccount createTechnician(String name, String email, String department,
+                                        String password, List<String> skills) {
+        if (skills == null || skills.isEmpty()) {
+            throw new IllegalArgumentException("Choose at least one skill for the technician");
+        }
+        UserAccount account = create(name, email, department, password, Role.TECHNICIAN);
+        account.skills = String.join(",", skills);
+        return users.save(account);
     }
 
     // Anything left null keeps its current value.

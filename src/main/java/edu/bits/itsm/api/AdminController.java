@@ -13,17 +13,21 @@ import edu.bits.itsm.auth.CurrentUser;
 import edu.bits.itsm.auth.Role;
 import edu.bits.itsm.auth.UserAccount;
 import edu.bits.itsm.auth.UserAccountTable;
+import edu.bits.itsm.auth.UserManagementService;
 import edu.bits.itsm.domain.Incident;
+import edu.bits.itsm.domain.IncidentCategory;
 import edu.bits.itsm.domain.IncidentStatus;
 import edu.bits.itsm.domain.Technician;
 import edu.bits.itsm.domain.TechnicianUnavailableException;
 import edu.bits.itsm.service.IncidentService;
+import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestController;
 
 import java.util.ArrayList;
@@ -38,19 +42,25 @@ public class AdminController {
 
     public record StrategyRequest(String name) { }
 
+    public record CreateTechnicianRequest(String name, String email, String department,
+                                          String password, List<String> skills) { }
+
     private final IncidentService incidentService;
     private final List<Technician> technicians;
     private final UserAccountTable users;
+    private final UserManagementService userService;
 
     // the assignment rules an admin can choose from
     private final Map<String, AssignmentStrategy> strategies = new LinkedHashMap<>();
 
     public AdminController(IncidentService incidentService,
                            List<Technician> technicians,
-                           UserAccountTable users) {
+                           UserAccountTable users,
+                           UserManagementService userService) {
         this.incidentService = incidentService;
         this.technicians = technicians;
         this.users = users;
+        this.userService = userService;
 
         AssignmentStrategy skillBased = new SkillBasedStrategy();
         AssignmentStrategy loadBased = new LoadBasedStrategy();
@@ -76,6 +86,34 @@ public class AdminController {
             responses.add(TechnicianResponse.from(technician, activeIncidentsOf(technician)));
         }
         return responses;
+    }
+
+    // Makes a technician login and adds the technician to the list used for assignment
+    @PostMapping("/admin/technicians")
+    @AllowedRoles({Role.ADMIN})
+    @ResponseStatus(HttpStatus.CREATED)
+    public TechnicianResponse createTechnician(@RequestBody CreateTechnicianRequest request) {
+        // check the skill names first, so a typo does not leave a half-made account behind
+        List<IncidentCategory> categories = new ArrayList<>();
+        if (request.skills() != null) {
+            for (String skill : request.skills()) {
+                try {
+                    categories.add(IncidentCategory.valueOf(skill));
+                } catch (IllegalArgumentException | NullPointerException e) {
+                    throw new IllegalArgumentException("Unknown skill '" + skill + "'");
+                }
+            }
+        }
+
+        UserAccount account = userService.createTechnician(request.name(), request.email(),
+                request.department(), request.password(), request.skills());
+
+        Technician technician = new Technician(account.id, account.name, account.email);
+        for (IncidentCategory category : categories) {
+            technician.addSkill(category);
+        }
+        technicians.add(technician);
+        return TechnicianResponse.from(technician, 0);
     }
 
     @PutMapping("/admin/technicians/{id}/availability")

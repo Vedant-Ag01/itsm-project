@@ -12,6 +12,7 @@ export const updateUser = (id, body) =>
   apiRequest(`/admin/users/${encodeURIComponent(id)}`, { method: 'PUT', body })
 
 export const getTechnicians = (o) => apiRequest('/admin/technicians', o)
+export const createTechnician = (body) => apiRequest('/admin/technicians', { method: 'POST', body })
 export const setTechnicianAvailability = (id, available) =>
   apiRequest(`/admin/technicians/${encodeURIComponent(id)}/availability`, {
     method: 'PUT',

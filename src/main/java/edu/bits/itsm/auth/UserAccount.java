@@ -34,6 +34,10 @@ public class UserAccount {
     // (value null) simply count as active.
     public Boolean active = true;
 
+    // Only used for technicians: their skills as category names, e.g. "NETWORK,HARDWARE".
+    // It is null for everyone else.
+    public String skills;
+
     public boolean isActive() {
         return active == null || active;
     }
